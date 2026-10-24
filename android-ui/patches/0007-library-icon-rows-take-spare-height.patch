@@ -1,0 +1,54 @@
+--- a/sid_0901_library/Contents.qml
++++ b/sid_0901_library/Contents.qml
+@@ -41,6 +41,21 @@
+      */
+     signal receiverIconClicked()
+ 
++    // The stock layout sizes the icon pages for two heights: 6 + 400 above
++    // BasicPlayerControls, 24 + 504 without them (each row 26 px taller to
++    // touch), the dots 31 below the pages and 10 above the controls. With no
++    // function icon row the screen is taller than the first, and the rows take
++    // the spare height up to the second; the top margin takes what whole rows
++    // leave, so the dots stay 10 above the controls. The screen area already
++    // ends at the controls (ScreenController::ReconfigureScreenByWindow).
++    // LibraryTopHelpGuide.qml (0003) repeats this to frame the second row.
++    readonly property int spare_icon_height: function_icon_area.height === 0
++                                             ? root.height - (6 + 400 + 31 + 20 + 10) : 0
++    readonly property int icon_touch_extension:
++        Math.max(0, Math.min(26, Math.floor(spare_icon_height * 26 / (24 + 504 - 6 - 400))))
++    readonly property int icon_pages_top_margin:
++        Math.max(6, Math.min(24, 6 + spare_icon_height - 4 * icon_touch_extension))
++
+     /**
+      * BasicPlayerControls の有無によるレイアウト変更処理
+      */
+@@ -49,10 +64,10 @@
+       if (is_available_basic_player_controls)
+       {
+         // height = (画像高さ(88px) + 操作可能拡張領域(0px) + margin(12px)) * rowCount(4個)
+-        libraryIcon.height = 400
++        libraryIcon.height = Qt.binding(function() { return 4 * (100 + icon_touch_extension) })
+         // 操作可能拡張領域の半分
+-        libraryIcon.icon_image_top_margin = 0
+-        libraryIcon.anchors.topMargin = 6
++        libraryIcon.icon_image_top_margin = Qt.binding(function() { return Math.floor(icon_touch_extension / 2) })
++        libraryIcon.anchors.topMargin = Qt.binding(function() { return icon_pages_top_margin })
+ 
+         // topMargin = 画面高さ(800px) - アイコン自体の高さ(20px) - アイコンの下部エレメントへの空白(10px) - アイコンの下部エレメントの総高さ(230px) - ステータスバー(28px)
+         pageIndicator.anchors.topMargin = Qt.binding(function() { return libraryIcon.y + libraryIcon.height + 31 })
+@@ -107,12 +122,12 @@
+     LibraryIcon {
+         id: libraryIcon
+         width: 480
+-        height: 400
+-        icon_image_top_margin: 0
++        height: 4 * (100 + icon_touch_extension)
++        icon_image_top_margin: Math.floor(icon_touch_extension / 2)
+         anchors
+         {
+           top: function_icon_area.bottom;
+-          topMargin: 6
++          topMargin: icon_pages_top_margin
+           left: parent.left
+         }
+         list: icon_list

@@ -1,0 +1,82 @@
+--- a/probe/android/container/init.aosp.rc	2026-10-15 19:40:20.150172413 +0900
++++ b/probe/android/container/init.aosp.rc	2026-10-15 19:49:48.173520317 +0900
+@@ -260,6 +260,79 @@
+ service debuggerd /system/bin/debuggerd
+     class main
+ 
++# ---- Wi-Fi (draft, not yet validated on the device) ------------------------
++# Kernel side: the four modules are loaded by the HOST script before this init
++# starts (android-boot.sh wifi_modules), which is also what makes ueventd create
++# /dev/wmtWifi (ueventd.icx.rc: 0660 system system).
++#
++# Power-on. CM's libhardware_legacy does not write /dev/wmtWifi for a plain
++# station: wifi_load_driver() is property_set("wlan.driver.status", "ok") and
++# nothing else (disassembled, lib/libhardware_legacy.so 0x1cc8), and a raw
++# string search of the whole CM image finds wifi_change_fw_path() only in that
++# library and in netd (soft-AP reload). The CM ramdisk has no wmtWifi power-on
++# rule at all; the Fire ramdisk's init.mt8127.rc carries exactly the two
++# triggers below, commented out (lines 559-563), so the stock Fire kernel must
++# power the radio some other way. The Sony kernel with the WIFITEST modules
++# does need the write (proven 2026-10-11), so init does it here.
++# The write blocks init until the chip is up (about 1.5 s: firmware download),
++# and init handles the next property message (ctl.start wpa_supplicant) only
++# afterwards, so wlan0 exists by then.
++# Careful: AOSP 5.1's init write opens with O_CREAT (not checked in Amazon's
++# binary). If /dev/wmtWifi is missing, this would create a regular file of that
++# name and the radio never starts. The operator checklist makes the node check
++# the first step.
++on property:wlan.driver.status=ok
++    write /dev/wmtWifi "1"
++
++on property:wlan.driver.status=unloaded
++    write /dev/wmtWifi "0"
++
++# Verbatim from CM's init.mt8127.rc (ford ramdisk). wifi_start_supplicant()
++# starts "wpa_supplicant" (or "p2p_supplicant" when the framework believes
++# WiFi Direct exists), waits for init.svc.<name> = running, and the framework
++# then talks to @android:wpa_wlan0 and /data/misc/wifi/sockets/wlan0.
++service wpa_supplicant /system/bin/wpa_supplicant \
++    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf -e/data/misc/wifi/entropy.bin \
++    -I/system/etc/wifi/wpa_supplicant_overlay.conf \
++    -O/data/misc/wifi/sockets -g@android:wpa_wlan0
++    class main
++    socket wpa_wlan0 dgram 660 wifi wifi
++    disabled
++    oneshot
++
++# Safety net only: android-boot.sh hides android.hardware.wifi.direct, so this
++# should never start. CM's own p2p_supplicant line also brings up -ip2p0, which
++# this driver does not create (iw phy: IBSS and managed only), and wpa_supplicant
++# exits when one of its interfaces fails. This single-interface variant keeps
++# Wi-Fi working if the permissions overlay is ever missing.
++service p2p_supplicant /system/bin/wpa_supplicant \
++    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf -e/data/misc/wifi/entropy.bin \
++    -I/system/etc/wifi/wpa_supplicant_overlay.conf \
++    -O/data/misc/wifi/sockets -g@android:wpa_wlan0
++    class main
++    socket wpa_wlan0 dgram 660 wifi wifi
++    disabled
++    oneshot
++
++# DHCP. libnetutils (dhcp_do_request) starts "dhcpcd_<iface>" with the
++# interface as a dynamic argument (this init supports that for oneshot services)
++# and reads dhcp.<iface>.* properties that the dhcpcd hook scripts set. DNS
++# reaches the apps through netd's resolver (the framework pushes the
++# dhcp.wlan0.dns* values to it); there is no resolv.conf to maintain.
++service dhcpcd_wlan0 /system/bin/dhcpcd -ABK -dd
++    class main
++    user dhcp
++    group net_admin net_raw
++    disabled
++    oneshot
++
++service iprenew_wlan0 /system/bin/dhcpcd -n
++    class main
++    user dhcp
++    group net_admin net_raw
++    disabled
++    oneshot
++
+ # system_server's Installer blocks on installd ("Waiting for installd to be
+ # ready"), so it has to be running. keystore is deliberately absent: its
+ # keystore.mt8127.so HAL needs the MTK TEE keymaster, which this container

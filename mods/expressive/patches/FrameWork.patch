@@ -1,0 +1,26 @@
+--- a/framework/FrameWork.qml
++++ b/framework/FrameWork.qml
+@@ -23,6 +23,8 @@
+     property var textsize: screenController.styleProperties[mode]["textsize"]
+     property var textcolor: screenController.styleProperties[mode]["textcolor"]
+     property var bgcolor: screenController.styleProperties[mode]["bgcolor"]
++    // wmmod: dynamic colour scheme and backdrop, components/WmBackdrop.qml
++    property Item wm: wmBackdrop.item
+   }
+   /**
+    * screen_info 画面サイズ情報
+@@ -1456,4 +1458,14 @@
+       }
+     }
+   }
++
++  // wmmod: behind every screen and window. components/WmHot.qml written
++  // out, since this file does not import components/.
++  Loader {
++    id: wmBackdrop
++    property int wmReloadToken: 0
++    anchors.fill: parent
++    z: -1
++    source: wmReloadToken < 0 ? "" : "qrc:/components/WmBackdrop.qml"
++  }
+ }

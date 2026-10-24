@@ -1,0 +1,12 @@
+--- a/components/StatusBar.qml
++++ b/components/StatusBar.qml
+@@ -12,7 +12,8 @@
+     id:stateBar
+     width: 480
+     height: 12
+-    color : viewstyle.bgcolor.D1
++    // wmmod: let the tinted backdrop through
++    color : (viewstyle.wm && viewstyle.wm.tint) ? "transparent" : viewstyle.bgcolor.D1
+ 
+     /** type:string マウスエリアのenabledプロパティ */
+     property bool isEnableStatusBarMouseArea

@@ -1,0 +1,42 @@
+--- a/sid_1001_sensme_player/SensMePlayer.qml
++++ b/sid_1001_sensme_player/SensMePlayer.qml
+@@ -26,6 +26,12 @@
+     signal selectChannelAt(int channelIndex)
+     signal cancelSelectChannel()
+ 
++    // Android's navigation bar takes 48 px of the stock 800. The empty gaps
++    // above and below the channel strip (72 + 36 + 40) give that height back,
++    // in the stock proportions, so the strip and the metadata (179 px, the
++    // PlayerMetaDataArea's own height) keep their size.
++    readonly property real gapFit: Math.max(0, Math.min(1, 1 - (72 + 240 + 36 + 18 + 40 + 179 - height) / 148))
++
+     Connections {
+         target: controller
+         onAvailable:  {
+@@ -81,7 +87,7 @@
+     }
+ 
+     Column {
+-        y: 72
++        y: Math.round(72 * sensMePlayer.gapFit)
+         PathView {
+             id: sensMeChannelPathView
+             width: 480
+@@ -111,7 +117,7 @@
+         }
+         Rectangle {
+             width: sensMePlayer.width
+-            height: 36
++            height: Math.round(36 * sensMePlayer.gapFit)
+             color: "black"
+         }
+         SensMeChannelPageControl {
+@@ -123,7 +129,7 @@
+         }
+         Rectangle {
+             width: sensMePlayer.width
+-            height: 40
++            height: Math.round(40 * sensMePlayer.gapFit)
+             color: "black"
+         }
+         PlayerMetaDataArea {

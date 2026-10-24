@@ -1,0 +1,12 @@
+# Sony's icx_key: the NW-A50 series buttons, read through two ADC ladders.
+# Codes from wm_key.c in Sony's GPL release (KC_AD0_*, KC_AD1_*). Without this
+# file Generic.kl turns play, next and previous into ENTER and D-pad keys.
+# The HOLD switch (35, KEY_H) and the codes no A55 button sends are left out,
+# so Android drops them.
+
+key 28    MEDIA_PLAY_PAUSE
+key 106   MEDIA_NEXT
+key 105   MEDIA_PREVIOUS
+key 114   VOLUME_DOWN
+key 115   VOLUME_UP
+key 116   POWER             WAKE

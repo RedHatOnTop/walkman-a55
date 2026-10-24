@@ -1,0 +1,25 @@
+--- a/components/ImePanelPopup.qml
++++ b/components/ImePanelPopup.qml
+@@ -79,7 +79,9 @@
+ 
+     Rectangle{
+         id:imePopupTopMargin
+-        height: hasVolumeBar ? popupVolumeTopMargin : popupTopMargin
++        // Starts where the screen does, under this build's header, which is
++        // taller than the A55's 28 px info row.
++        height: screenController.y
+         width: parent.width
+         anchors { left: parent.left; top:parent.top; topMargin: 0 }
+         color: "transparent"
+--- a/components/VolumePopup.qml
++++ b/components/VolumePopup.qml
+@@ -68,7 +68,8 @@
+       id: p
+       //! デザイン定義
+       property int topMarginWithVolumeBar: 88
+-      property int topMarginWithoutVolumeBar: 32
++      // 4 px under the header, as on the A55 under its 28 px info row.
++      property int topMarginWithoutVolumeBar: screenController.y + 4
+       property int closeButtonSize: 60
+       property int closeButtonTopMargin: 2 // 台紙(volumeDialogFrame)Topからのマージン
+       property int closeButtonRightMargin: 1 // 台紙(volumeDialogFrame)右端からのマージン

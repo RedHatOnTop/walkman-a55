@@ -1,0 +1,300 @@
+# Minimal init.rc for the NW-A55 Android bring-up.
+#
+# This is deliberately NOT the FireOS init.rc. It starts only what an Android
+# 5.1 userspace needs to come up on the Walkman: ueventd so a fresh /dev gets
+# populated, logd so there are logs, servicemanager, surfaceflinger and zygote.
+#
+# It never mounts a partition and never reconfigures USB, so it does not touch
+# /sys/class/android_usb and the adb link stays up. It is not confined to the
+# container, though: /proc/sys/vm/overcommit_memory is a global kernel setting,
+# and ueventd's coldboot writes uevents for every device in the system. Both are
+# deliberate and neither survives a reboot.
+#
+# The container runs in its own mount namespace, made by probe/devtools/
+# pivotinit.c, with the container root mounted over /. Android's init mounts
+# tmpfs on /dev and mounts proc and sysfs at startup; those land inside the
+# container's namespace, so the Sony stack's /dev, /proc and /sys are untouched.
+
+on early-init
+    start ueventd
+
+on init
+    sysclktz 0
+    loglevel 7
+
+    # Android sets this in on boot. Without it the heuristic overcommit check
+    # refuses ART's heap reservations (dex2oat asked for 384 MB on a 456 MB
+    # device and got ENOMEM out of mmap).
+    write /proc/sys/vm/overcommit_memory 1
+    # FireOS's init.rc:419-424. lmkd and ActivityManagerService write these
+    # parameters, so system has to be able to reach them.
+    write /proc/sys/vm/min_free_order_shift 4
+    chown root system /sys/module/lowmemorykiller/parameters/adj
+    chmod 0664 /sys/module/lowmemorykiller/parameters/adj
+    chown root system /sys/module/lowmemorykiller/parameters/minfree
+    chmod 0664 /sys/module/lowmemorykiller/parameters/minfree
+
+    export PATH /sbin:/system/sbin:/system/bin:/system/xbin
+    export ANDROID_BOOTLOGO 1
+    export ANDROID_ROOT /system
+    export ANDROID_ASSETS /system/app
+    export ANDROID_DATA /data
+    export ANDROID_STORAGE /storage
+    export ASEC_MOUNTPOINT /mnt/asec
+    export LOOP_MOUNTPOINT /mnt/obb
+    # FireOS sets these in init.ssd.rc. Without them a normal app fork aborts:
+    # MountEmulatedStorage() (com_android_internal_os_Zygote.cpp) returns false
+    # when EMULATED_STORAGE_SOURCE/TARGET/EXTERNAL_STORAGE are undefined, and
+    # the caller turns that into "Cannot continue without emulated storage" +
+    # RuntimeAbort, which kills the whole zygote. Measured: zygote aborted in a
+    # loop the moment system_server started the FireOS OOBE app.
+    export EXTERNAL_STORAGE /storage/emulated/legacy
+    export EMULATED_STORAGE_SOURCE /mnt/shell/emulated
+    export EMULATED_STORAGE_TARGET /storage/emulated
+    export BOOTCLASSPATH /system/framework/core-libart.jar:/system/framework/conscrypt.jar:/system/framework/okhttp.jar:/system/framework/core-junit.jar:/system/framework/bouncycastle.jar:/system/framework/ext.jar:/system/framework/framework.jar:/system/framework/telephony-common.jar:/system/framework/voip-common.jar:/system/framework/ims-common.jar:/system/framework/mms-common.jar:/system/framework/android.policy.jar:/system/framework/apache-xml.jar:/system/framework/fosframework.jar:/system/framework/icu4j.jar:/system/framework/android-icu4j.jar:/system/framework/i18n-utilities.jar:/system/framework/webviewext.jar:/system/framework/amazon-remoteviews.jar
+    export SYSTEMSERVERCLASSPATH /system/framework/services.jar:/system/framework/ethernet-service.jar:/system/framework/wifi-service.jar:/system/framework/fosinit.jar:/system/framework/fosservices.jar:/system/framework/AWSRemoteConfigurationAndroidClient.jar
+    # FireOS carries a second resource package (id 0x02). Without this the
+    # framework cannot resolve ids like 0x02070002 and ActivityManagerService's
+    # constructor throws:
+    #   Resources$NotFoundException: Resource ID #0x2070002
+    #   at ...ExcessivePowerUsageMonitorAndKillCallback.vendorInit
+    export AMAZON_EXTRA_RESOURCE_LIST framework/fireos-res/fireos-res.apk
+
+    symlink /system/etc /etc
+    symlink /system/vendor /vendor
+
+    mkdir /mnt 0775 root system
+    mkdir /storage 0751 root sdcard_r
+    # The emulated storage tree and links from FireOS's init.ssd.rc. The
+    # bind mounts MountEmulatedStorage() makes need these to exist.
+    mkdir /mnt/shell 0700 shell shell
+    mkdir /mnt/shell/emulated 0700 shell shell
+    mkdir /mnt/shell/emulated/0 0700 shell shell
+    mkdir /storage/emulated 0555 root root
+    symlink /storage/emulated/legacy /sdcard
+    symlink /storage/emulated/legacy /mnt/sdcard
+    symlink /storage/emulated/legacy /storage/sdcard0
+    symlink /mnt/shell/emulated/0 /storage/emulated/legacy
+    symlink /mnt/shell/emulated/0 /storage/emulated/0
+    mkdir /data 0771 system system
+    mkdir /cache 0771 system cache
+    mkdir /dev/socket 0775 root system
+    mkdir /dev/logd 0770 logd log
+
+    # Mirrors FireOS's own post-fs-data list. Each of these was needed by
+    # something: zygote aborts with "Error creating cache dir
+    # /data/dalvik-cache/arm", installd gives up with "media fs prepare failed"
+    # (which leaves PackageManager unable to create data dirs for any package),
+    # and PackageManagerService's deleteTempPackageFiles NPEs on the null
+    # listFiles() of a missing /data/app-private. Ownership and modes are
+    # copied from FireOS's init.rc so the framework finds what it expects.
+    mkdir /data/app 0771 system system
+    mkdir /data/app-private 0771 system system
+    mkdir /data/app-lib 0771 system system
+    mkdir /data/app-asec 0700 root root
+    mkdir /data/data 0771 system system
+    mkdir /data/property 0700 root root
+    mkdir /data/local 0751 root root
+    mkdir /data/local/tmp 0771 shell shell
+    mkdir /data/dalvik-cache 0771 root root
+    mkdir /data/dalvik-cache/profiles 0711 system system
+    mkdir /data/dalvik-cache/arm 0771 system system
+    mkdir /data/resource-cache 0771 system system
+    mkdir /data/misc 01771 system misc
+    mkdir /data/misc/adb 02750 system shell
+    mkdir /data/misc/bluetooth 0770 system system
+    mkdir /data/misc/keychain 0771 system system
+    mkdir /data/misc/net 0750 root shell
+    mkdir /data/misc/radio 0770 system radio
+    mkdir /data/misc/sms 0770 system radio
+    mkdir /data/misc/zoneinfo 0775 system system
+    mkdir /data/misc/vpn 0770 system vpn
+    mkdir /data/misc/shared_relro 0771 shared_relro shared_relro
+    mkdir /data/misc/systemkeys 0700 system system
+    mkdir /data/misc/wifi 0770 wifi wifi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/wifi/wpa_supplicant 0770 wifi wifi
+    mkdir /data/misc/ethernet 0770 system system
+    mkdir /data/misc/dhcp 0770 dhcp wifi
+    mkdir /data/misc/user 0771 root root
+    mkdir /data/misc/user/0 0771 root root
+    mkdir /data/misc/media 0700 media media
+    mkdir /data/media 0770 media_rw media_rw
+    mkdir /data/media/obb 0770 media_rw media_rw
+    mkdir /data/media/0 0770 media_rw media_rw
+    mkdir /data/media/0/Android 0770 media_rw media_rw
+    mkdir /data/media/0/Android/data 0770 media_rw media_rw
+    mkdir /data/media/0/Android/obb 0770 media_rw media_rw
+    mkdir /data/system 0775 system system
+    mkdir /data/system/dropbox 0700 system system
+    mkdir /data/dontpanic 0750 root log
+    mkdir /data/tombstones 0771 system system
+    mkdir /data/anr 0775 system system
+    mkdir /data/logd 0770 logd log
+
+    # /init.rc is parsed before /data and /cache are mounted by the host side,
+    # but the directories themselves are already there. Android's built-in
+    # late-init chain is not in this file, so start it from here.
+    trigger late-init
+
+# FireOS loads /system/build.prop, /system/default.prop, /vendor/build.prop,
+# /data/local.prop and /data/property/* with this command; it is what supplies
+# ro.board.platform=mt8127 (how the MTK HALs are found) and the dalvik.vm.*
+# properties zygote reads. Its trigger normally comes from late-init.
+on load_all_props_action
+    load_all_props
+
+on late-init
+    trigger load_all_props_action
+    trigger boot
+
+on boot
+    # FireOS ships tablet heap sizes (heapsize 256m, dex2oat-Xmx 512m) and this
+    # build is ro.build.type=user, so /data/local.prop overrides are ignored.
+    # ART mmaps its whole -Xmx up front, so these have to come down to fit
+    # 456 MB of RAM. They must be set before zygote starts, i.e. here.
+    setprop dalvik.vm.heapstartsize 8m
+    setprop dalvik.vm.heapgrowthlimit 48m
+    setprop dalvik.vm.heapsize 128m
+    setprop dalvik.vm.heapminfree 512k
+    setprop dalvik.vm.heapmaxfree 2m
+    setprop dalvik.vm.heaptargetutilization 0.75
+    setprop dalvik.vm.dex2oat-Xms 16m
+    setprop dalvik.vm.dex2oat-Xmx 96m
+    setprop dalvik.vm.image-dex2oat-Xms 16m
+    setprop dalvik.vm.image-dex2oat-Xmx 96m
+
+    # FireOS ships persist.panel.orientation=270 for its own tablet panel.
+    # Measured with probe/devtools/fbcap.c on this device: at 270 the overlay
+    # engine writes the logical composition into the 480x800 panel buffer
+    # rotated 90 degrees; at 0 the same capture is upright. fbcap reads
+    # MTKFB_CAPTURE_FRAMEBUFFER, so that is the panel's own output, not
+    # SurfaceFlinger's logical composition.
+    setprop persist.panel.orientation 0
+
+    # Order matters here. ueventd is the only thing that turns uevents into
+    # /dev nodes, so stop it first: after that nothing can recreate the raw eMMC
+    # nodes, including vold's coldboot of /sys/block. Then clean /dev and start
+    # vold, which MountService blocks on. devclean is asynchronous (see its
+    # header), so it may still be running while the services below start.
+    stop ueventd
+    start devclean
+    start vold
+
+    class_start core
+    class_start main
+
+# FireOS's init has no working "exec": AOSP 5.1's do_exec is a stub that just
+# returns -1 (init/builtins.c:257-260), so an "exec -- /system/bin/sh ..." line
+# is accepted and then does nothing. Measured: with exec, the container's /dev
+# still held 41 raw eMMC names after boot, while running devclean.sh by hand
+# removed them. Run it as a oneshot service instead: "start" clears
+# SVC_DISABLED (init/init.c:180) and, having no class, nothing else starts it.
+service devclean /system/bin/sh /devclean.sh
+    oneshot
+    disabled
+
+# Started from early-init; deliberately not in a class so class_start does not
+# bring it back after devclean.sh has run.
+service ueventd /sbin/ueventd
+
+# MountService blocks startOtherServices on waitForAsecScan() until vold
+# connects (AOSP 5.1.1 SystemServer.java:721, MountService.java:867). vold runs
+# with no /fstab.icx in the container, so process_config() fails and it logs
+# "Error reading configuration ... continuing anyways" (vold main.cpp:80-82,
+# :154): no volumes are managed, no fstab is ever read, and it still answers the
+# MountService socket. The device script refuses to start if a fstab appears.
+service vold /system/bin/vold
+    class core
+    socket vold stream 0660 root mount
+    ioprio be 2
+
+# system_server's BatteryService binds android.os.IBatteryPropertiesRegistrar,
+# which healthd publishes. Without it BatteryService.onStart throws a null
+# registrar and system_server aborts.
+service healthd /sbin/healthd
+    class core
+
+service netd /system/bin/netd
+    class main
+    socket netd stream 0660 root system
+    socket dnsproxyd stream 0660 root inet
+    socket mdns stream 0660 root system
+    socket fwmarkd stream 0660 root inet
+
+# system_server's AudioService waits for media.audio_flinger and
+# media.audio_policy before it finishes booting, and without them the boot stops
+# at "Waiting for service media.audio_flinger...". mediaserver publishes both
+# before it touches any audio HAL: AudioFlinger::onFirstRef loads none
+# (frameworks/av services/audioflinger/AudioFlinger.cpp:212-235), and the policy
+# service's early return on failure (AudioPolicyService.cpp:87-113) happens
+# after addService. The MTK primary HAL is kept out of the container by
+# android-boot.sh, because it links libnvram/libcustom_nvram, which reach for
+# the NVRAM and PRO_INFO partitions.
+service media /system/bin/mediaserver
+    class main
+    user media
+    group audio camera inet net_bt net_bt_admin net_bw_acct drmrpc mediadrm drm amz_group media
+    ioprio rt 4
+
+service logd /system/bin/logd
+    class core
+    socket logd stream 0666 logd logd
+    socket logdr seqpacket 0666 logd logd
+    socket logdw dgram 0222 logd logd
+    group root system
+
+# FireOS's init.rc:634-637 runs this as a critical class-core service with this
+# socket. It is not optional: ActivityManagerService applies oom_adj only by
+# writing LMK_PROCPRIO to this socket (AOSP 5.1.1 ProcessList.java:600-614,
+# writeLmkd at :645-655 retries three times with one-second sleeps and then
+# gives up), with no fallback to /proc/<pid>/oom_score_adj. Without it every
+# setOomAdj costs AMS three seconds ("SLOW OOM ADJ: 3003ms") and no process is
+# ever ranked, so on 456 MB the kernel has nothing to kill by. Deliberately not
+# marked critical: a critical service that exits makes init call do_reboot(),
+# which would reset the device.
+service lmkd /system/bin/lmkd
+    class core
+    socket lmkd seqpacket 0660 system system
+
+service debuggerd /system/bin/debuggerd
+    class main
+
+# system_server's Installer blocks on installd ("Waiting for installd to be
+# ready"), so it has to be running. keystore is deliberately absent: its
+# keystore.mt8127.so HAL needs the MTK TEE keymaster, which this container
+# cannot reach ("could not open keymaster device in keystore"), so it would
+# only crash-loop. The framework tolerates a missing keystore.
+service installd /system/bin/installd
+    class main
+    socket installd stream 600 system system
+
+# uid 100, not system/1000: the kernel's binder driver remembers the euid of the
+# first context manager since boot, and on this device that was Sony's
+# hagodaemon as uid 100. A different euid gets EPERM from BINDER_SET_CONTEXT_MGR.
+service servicemanager /system/bin/servicemanager
+    class core
+    user 100
+    group system
+    onrestart restart zygote
+    onrestart restart surfaceflinger
+
+service surfaceflinger /system/bin/surfaceflinger
+    class core
+    user system
+    group graphics drmrpc
+    onrestart restart zygote
+
+# SurfaceFlinger starts this itself with "ctl.start bootanim", which is where
+# the earlier "init: no such service 'bootanim'" came from. disabled + oneshot
+# means only that request starts it.
+service bootanim /system/bin/bootanimation
+    class core
+    user graphics
+    group graphics audio
+    disabled
+    oneshot
+
+service zygote /system/bin/app_process -Xzygote /system/bin --zygote --start-system-server
+    class main
+    socket zygote stream 660 root system

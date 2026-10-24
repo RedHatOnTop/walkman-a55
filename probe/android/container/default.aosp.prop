@@ -1,0 +1,29 @@
+# ADDITIONAL_DEFAULT_PROPERTIES for the NW-A55 Android container - AOSP/CM variant.
+#
+# Loaded by Android init from /default.prop. ro.hardware comes from the kernel
+# cmdline (androidboot.hardware=icx), so the MTK HALs are found through
+# ro.board.platform=mt8127 in /system/build.prop instead.
+#
+# No ro.product.config.type here: that was the FireOS imp (device-type) crash
+# workaround and is meaningless once the Amazon framework is gone.
+
+ro.zygote=zygote32
+ro.secure=0
+ro.debuggable=1
+ro.allow.mock.location=0
+ro.mount.fs=EXT4
+ro.dalvik.vm.native.bridge=0
+dalvik.vm.dex2oat-Xms=64m
+dalvik.vm.dex2oat-Xmx=384m
+dalvik.vm.image-dex2oat-Xms=64m
+dalvik.vm.image-dex2oat-Xmx=64m
+
+# ro.* is first-writer-wins and /default.prop loads before /system/build.prop,
+# so this overrides the ford build.prop's ro.sf.hwrotation=270. 0 was upright
+# with the Fire stack on this 480x800 panel (docs/android.md); confirm on the
+# first fbcap capture of the CM SurfaceFlinger output.
+ro.sf.hwrotation=0
+
+# The ford build.prop says 160, which left the UI small on this 3.1" panel.
+# Changing it at runtime (wm density) makes CM soft-reboot the framework.
+ro.sf.lcd_density=200

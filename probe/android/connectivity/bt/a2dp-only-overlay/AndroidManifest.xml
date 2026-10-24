@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static RRO for com.android.bluetooth, scanned from /vendor/overlay. PackageParser
+     (5.1) rejects an overlay without a priority in 0..9999. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.nwa55.overlay.bluetooth">
+    <overlay android:targetPackage="com.android.bluetooth" android:priority="1" />
+</manifest>

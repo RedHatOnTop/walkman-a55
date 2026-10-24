@@ -1,0 +1,16 @@
+# ADDITIONAL_DEFAULT_PROPERTIES for the NW-A55 Android container.
+#
+# Loaded by Android init from /default.prop. ro.hardware comes from the kernel
+# cmdline (androidboot.hardware=icx), so the MTK HALs are found through
+# ro.board.platform=mt8127 in /system/build.prop instead.
+
+ro.zygote=zygote32
+ro.secure=0
+ro.debuggable=1
+ro.allow.mock.location=0
+ro.mount.fs=EXT4
+ro.dalvik.vm.native.bridge=0
+dalvik.vm.dex2oat-Xms=64m
+dalvik.vm.dex2oat-Xmx=384m
+dalvik.vm.image-dex2oat-Xms=64m
+dalvik.vm.image-dex2oat-Xmx=64m

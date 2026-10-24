@@ -1,0 +1,109 @@
+wlan_mt: STA mgmt_tx and testmode_cmd take the 3.17 cfg80211 arguments
+
+The driver picks op signatures by LINUX_VERSION_CODE, which is the host
+kernel's 3.10, while backports 3.17 cfg80211 calls the ops with its own
+argument lists. The P2P ops already have CONFIG_MTK_BENTEN_SUPPORT variants
+for that; the STA ones were missed:
+
+  testmode_cmd(wiphy, wdev, data, len)       driver took (wiphy, data, len)
+  mgmt_tx(wiphy, wdev, params, cookie)       driver took the 3.10 list
+
+testmode_cmd treated the wireless_dev as its parameter block and cleared the
+top byte of wdev->wiphy; mgmt_tx read buf, len and cookie from the stack and
+wrote the cookie through that pointer. The remaining incompatible-pointer
+warnings on the station ops are const-only (u8 *mac vs const u8 *mac).
+
+--- a/drivers/net/wireless/mt_soc/conn_soc/mt_wifi/wlan/os/linux/include/gl_cfg80211.h
++++ b/drivers/net/wireless/mt_soc/conn_soc/mt_wifi/wlan/os/linux/include/gl_cfg80211.h
+@@ -336,7 +336,15 @@
+     );
+ 
+ 
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
++#if CONFIG_MTK_BENTEN_SUPPORT
++int
++mtk_cfg80211_mgmt_tx (
++    struct wiphy *wiphy,
++    struct wireless_dev *wdev,
++    struct cfg80211_mgmt_tx_params *params,
++    u64 *cookie
++    );
++#elif LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
+ int
+ mtk_cfg80211_mgmt_tx (
+     struct wiphy *wiphy,
+@@ -437,12 +445,22 @@
+     IN P_GLUE_INFO_T prGlueInfo
+     );
+ 
++#if CONFIG_MTK_BENTEN_SUPPORT
++int
++mtk_cfg80211_testmode_cmd(
++    IN struct wiphy *wiphy,
++    IN struct wireless_dev *wdev,
++    IN void *data,
++    IN int len
++    );
++#else
+ int
+ mtk_cfg80211_testmode_cmd(
+     IN struct wiphy *wiphy,
+     IN void *data,
+     IN int len
+     );
++#endif
+ 
+ int
+ mtk_cfg80211_testmode_sw_cmd(
+--- a/drivers/net/wireless/mt_soc/conn_soc/mt_wifi/wlan/os/linux/gl_cfg80211.c
++++ b/drivers/net/wireless/mt_soc/conn_soc/mt_wifi/wlan/os/linux/gl_cfg80211.c
+@@ -1911,6 +1911,15 @@
+  *         others:  failure
+  */
+ /*----------------------------------------------------------------------------*/
++#if CONFIG_MTK_BENTEN_SUPPORT
++int
++mtk_cfg80211_mgmt_tx (
++    struct wiphy *wiphy,
++    struct wireless_dev *wdev,
++    struct cfg80211_mgmt_tx_params *params,
++    u64 *cookie
++    )
++#else
+ int
+ mtk_cfg80211_mgmt_tx (
+     struct wiphy *wiphy,
+@@ -1932,7 +1941,12 @@
+     bool dont_wait_for_ack,
+     u64 *cookie
+     )
++#endif
+ {
++#if CONFIG_MTK_BENTEN_SUPPORT
++    const u8 *buf = params ? params->buf : NULL;
++    size_t len = params ? params->len : 0;
++#endif
+     P_GLUE_INFO_T prGlueInfo = NULL;
+     INT_32 i4Rslt = -EINVAL;
+     P_MSG_MGMT_TX_REQUEST_T prMsgTxReq = (P_MSG_MGMT_TX_REQUEST_T)NULL;
+@@ -2622,11 +2636,20 @@
+ #endif
+ 
+ 
++#if CONFIG_MTK_BENTEN_SUPPORT
++int mtk_cfg80211_testmode_cmd(
++    IN struct wiphy *wiphy,
++    IN struct wireless_dev *wdev,
++    IN void *data,
++    IN int len
++    )
++#else
+ int mtk_cfg80211_testmode_cmd(
+     IN struct wiphy *wiphy,
+     IN void *data,
+     IN int len
+     )
++#endif
+ {
+     P_GLUE_INFO_T prGlueInfo = NULL;
+     P_NL80211_DRIVER_TEST_MODE_PARAMS prParams = (P_NL80211_DRIVER_TEST_MODE_PARAMS)NULL;

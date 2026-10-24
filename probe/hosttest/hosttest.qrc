@@ -1,0 +1,16 @@
+<RCC>
+    <qresource prefix="/">
+        <file>test.qml</file>
+        <file>Badge.qml</file>
+        <file>parts/Pill.qml</file>
+        <file>parts/Dot.qml</file>
+        <file>Hot.qml</file>
+        <file>Body.qml</file>
+        <file>bodyDot.png</file>
+        <file>dot.png</file>
+        <file>Win.qml</file>
+        <file>parts/Area.qml</file>
+        <file>parts/Btn.qml</file>
+        <file>parts/Leaf.qml</file>
+    </qresource>
+</RCC>

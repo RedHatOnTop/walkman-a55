@@ -1,0 +1,54 @@
+# /system directories the image drops (devlog 2026-10-14-cm-ford-customize.md and
+# 2026-10-15-ford-debloat2-lowram.md). Keep /priv-app/ThemesProvider: without it
+# system_server crashes (2026-10-15-preflight-ford-fixes.md). Never /vendor or
+# /bin/idmap: the resource overlays need them.
+
+# wallpapers and dreams
+/app/BasicDreams
+/app/CMWallpapers
+/app/Galaxy4
+/app/HoloSpiralWallpaper
+/app/LiveWallpapers
+/app/LiveWallpapersPicker
+/app/NoiseField
+/app/PhaseBeam
+/app/PhotoPhase
+/app/PhotoTable
+/app/VisualizationWallpapers
+
+# apps a music player has no use for
+/app/Calculator
+/app/Calendar
+/app/Camera2
+/app/DeskClock
+/app/Development
+/app/Email
+/app/Exchange2
+/app/Gallery2
+/app/HTMLViewer
+/app/LockClock
+/app/PicoTts
+/app/PrintSpooler
+/app/Profiles
+/app/SoundRecorder
+/app/Terminal
+/app/WAPPushManager
+
+# replaced: the browser by android-browser, the music app by WalkmanUI
+/app/privacy-browser
+/app/Eleven
+
+# telephony on a player with no modem, the theme chooser, CM's effects app
+/priv-app/TeleService
+/priv-app/Telecom
+/priv-app/MmsService
+/priv-app/ThemeChooser
+/priv-app/AudioFX
+
+# idle services
+/app/PacProcessor
+/priv-app/BackupRestoreConfirmation
+/priv-app/Contacts
+/priv-app/ManagedProvisioning
+/priv-app/SharedStorageBackup
+/priv-app/VpnDialogs

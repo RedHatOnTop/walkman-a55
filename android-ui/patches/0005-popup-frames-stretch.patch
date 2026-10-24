@@ -1,0 +1,34 @@
+--- a/sid_0204_player/SyncLyricDisp.qml
++++ b/sid_0204_player/SyncLyricDisp.qml
+@@ -230,9 +230,13 @@
+         }
+ 
+         // Popup parts
+-        Image {
++        // The ViewModel shortens the popup to fit under the action row on a
++        // screen shorter than the stock 800 px, so the frame stretches between
++        // its corners instead of keeping the picture's own height.
++        BorderImage {
+             id: popupArea
+-            anchors { top: parent.top; left: parent.left; }
++            anchors.fill: parent
++            border { left: 24; right: 24; top: 24; bottom: 24 }
+             source: p.popup_area_parts
+         }
+ 
+--- a/sid_0206_detailedInfo/ContentDetailedInfo.qml
++++ b/sid_0206_detailedInfo/ContentDetailedInfo.qml
+@@ -57,8 +57,12 @@
+         detailedInfo.contentY = p.list_reset_position
+     }
+ 
+-    Image {
++    // The ViewModel shortens the popup to fit under the action row on a
++    // screen shorter than the stock 800 px, so the frame stretches between
++    // its corners instead of keeping the picture's own height.
++    BorderImage {
+         id: background
++        border { left: 24; right: 24; top: 24; bottom: 24 }
+         width: p.popup_area_width
+         height: popup_area_height
+         y: musicDetailedInfo.popup_area_position_y

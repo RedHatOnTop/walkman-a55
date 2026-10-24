@@ -1,0 +1,192 @@
+--- a/sid_0901_library/Contents.qml
++++ b/sid_0901_library/Contents.qml
+@@ -55,7 +55,7 @@
+         libraryIcon.anchors.topMargin = 6
+ 
+         // topMargin = 画面高さ(800px) - アイコン自体の高さ(20px) - アイコンの下部エレメントへの空白(10px) - アイコンの下部エレメントの総高さ(230px) - ステータスバー(28px)
+-        pageIndicator.anchors.topMargin = 512
++        pageIndicator.anchors.topMargin = Qt.binding(function() { return libraryIcon.y + libraryIcon.height + 31 })
+       }
+       else
+       {
+@@ -66,7 +66,7 @@
+         libraryIcon.anchors.topMargin = 24
+ 
+         // topMargin = 画面高さ(800px) - アイコン自体の高さ(20px) - アイコンの下部エレメントへの空白(10px) - アイコンの下部エレメントの総高さ(72px) - ステータスバー(28px)
+-        pageIndicator.anchors.topMargin = 670
++        pageIndicator.anchors.topMargin = Qt.binding(function() { return Math.min(670, root.height - 30) })
+       }
+     }
+ 
+@@ -79,6 +79,10 @@
+     FunctionIconArea {
+         id: function_icon_area
+         anchors { top: parent.top; left: parent.left }
++        // Android's navigation bar takes 48 px of the stock 800: an empty
++        // function icon row gives its height back to the icon pages.
++        height: (root.isAvailableFmRadio || root.isAvailableRecorder || root.isAvailableLangStudy
++                 || root.isAvailableDACMode || root.is_available_bt_receiver) ? 75 : 0
+         function_icon {
+             isAvailableFmRadio: root.isAvailableFmRadio
+             isAvailableRecorder: root.isAvailableRecorder
+@@ -138,7 +142,7 @@
+         // BasicPlayerControls の曲タイトル部分がスワイプ開始すると表示/非表示が切り替わるため、
+         // bottom 合わせでは上下にずれてしまう
+         // そのため top 合わせとする
+-        anchors { top: parent.top; topMargin: 512; }
++        anchors { top: parent.top; topMargin: libraryIcon.y + libraryIcon.height + 31; }
+         markcount: libraryIcon.pageCount
+         nowIndex: libraryIcon.pageIndex
+     }
+--- a/sid_0201_player/MusicPlayerDefault.qml
++++ b/sid_0201_player/MusicPlayerDefault.qml
+@@ -34,10 +34,12 @@
+         id: p
+         property int coverArtDimension: 400
+         property int coverArtTop: 36 - 28
++        readonly property real fit: Math.max(0, Math.min(1, (musicPlayerDefault.height - 176) / 408))
+     }
+ 
+     Item {
+         id: img
++        transform: Scale { origin.x: img.width / 2; xScale: p.fit; yScale: p.fit }
+         width: parent.width
+         height: p.coverArtTop + p.coverArtDimension
+         anchors{top: parent.top; left: parent.left}
+@@ -57,7 +59,7 @@
+         artistName: musicPlayerDefault.meta_data["artist_name"]
+         albumName: musicPlayerDefault.meta_data["album_name"]
+         width: musicPlayerDefault.width
+-        anchors{top: img.bottom; left: musicPlayerDefault.left}
++        anchors{top: img.top; topMargin: img.height * p.fit; left: musicPlayerDefault.left}
+         totalPlaybackTime: musicPlayerDefault.total_playback_time
+         currentlyPlayingTime: musicPlayerDefault.currently_playing_time
+         modeHiRes: musicPlayerDefault.meta_data["is_high_resolution"]
+--- a/sid_0202_player/MusicPlayerSpectrum.qml
++++ b/sid_0202_player/MusicPlayerSpectrum.qml
+@@ -41,6 +41,7 @@
+       id: p
+       property int spe_ana_top: (118 - 54 - 28)
+       property int spe_ana_height: 408
++      readonly property real fit: Math.max(0, Math.min(1, (musicPlayerSpectrum.height - 176) / 408))
+       /** type:int カバーアート表示の大きさ(UAC Device or BT Audio接続時時) */
+       property int cover_art_dimension: 400
+       /** type:int 接続されていた機器のDevice IDを保持するためのプロパティ */
+@@ -107,6 +108,7 @@
+ 
+     Item {
+       id: speAna
++      transform: Scale { origin.x: speAna.width / 2; xScale: p.fit; yScale: p.fit }
+       width: parent.width
+       height: p.spe_ana_height
+       anchors{top: parent.top; left: parent.left}
+@@ -134,7 +136,7 @@
+         artistName: musicPlayerSpectrum.meta_data["artist_name"]
+         albumName: musicPlayerSpectrum.meta_data["album_name"]
+         width: musicPlayerSpectrum.width
+-        anchors{top: speAna.bottom; left: musicPlayerSpectrum.left}
++        anchors{top: speAna.top; topMargin: speAna.height * p.fit; left: musicPlayerSpectrum.left}
+         totalPlaybackTime: musicPlayerSpectrum.total_playback_time
+         currentlyPlayingTime: musicPlayerSpectrum.currently_playing_time
+         modeHiRes: musicPlayerSpectrum.meta_data["is_high_resolution"]
+--- a/sid_0203_player/MusicPlayerLevelMeter.qml
++++ b/sid_0203_player/MusicPlayerLevelMeter.qml
+@@ -97,6 +97,7 @@
+       id: p
+       property int level_meter_top: (360 - 280 - 28)
+       property int level_meter_height: 408
++      readonly property real fit: Math.max(0, Math.min(1, (musicPlayerLevelMeter.height - 176) / 408))
+       /** type:int カバーアート表示の大きさ(UAC Device or BT Audio接続時時) */
+       property int cover_art_dimension: 400
+       /** type:int 接続されていた機器のDevice IDを保持するためのプロパティ */
+@@ -111,6 +112,7 @@
+ 
+     Item {
+       id: meter
++      transform: Scale { origin.x: meter.width / 2; xScale: p.fit; yScale: p.fit }
+       width: musicPlayerLevelMeter.width
+       height: p.level_meter_height
+       anchors{top: parent.top; left: parent.left}
+@@ -140,7 +142,7 @@
+         artistName: musicPlayerLevelMeter.meta_data["artist_name"]
+         albumName: musicPlayerLevelMeter.meta_data["album_name"]
+         width: musicPlayerLevelMeter.width
+-        anchors{top: meter.bottom; left: musicPlayerLevelMeter.left}
++        anchors{top: meter.top; topMargin: meter.height * p.fit; left: musicPlayerLevelMeter.left}
+         totalPlaybackTime: musicPlayerLevelMeter.total_playback_time
+         currentlyPlayingTime: musicPlayerLevelMeter.currently_playing_time
+         modeHiRes: musicPlayerLevelMeter.meta_data["is_high_resolution"]
+--- a/sid_0212_player/MusicPlayerDigitalLevelMeter.qml
++++ b/sid_0212_player/MusicPlayerDigitalLevelMeter.qml
+@@ -94,6 +94,7 @@
+     id: p
+     /** type:int スペアナ表示部の高さ */
+     property int cover_art_area_height: 408
++    readonly property real fit: Math.max(0, Math.min(1, (music_player_digital_level_meter.height - 176) / 408))
+     /** type:int カバーアート表示の大きさ(通常時) */
+     property int cover_art_dimension: 300
+     /** type:int カバーアートBottom Margin(通常時) */
+@@ -116,6 +117,7 @@
+   {
+     id: img
+     visible: true
++    transform: Scale { origin.x: img.width / 2; xScale: p.fit; yScale: p.fit }
+     width: parent.width
+     height: p.cover_art_area_height
+     anchors { top: parent.top; left: parent.left; }
+@@ -150,7 +152,7 @@
+     artistName: music_player_digital_level_meter.meta_data["artist_name"]
+     albumName: music_player_digital_level_meter.meta_data["album_name"]
+     width: music_player_digital_level_meter.width
+-    anchors{top: img.bottom; left: music_player_digital_level_meter.left}
++    anchors{top: img.top; topMargin: img.height * p.fit; left: music_player_digital_level_meter.left}
+     totalPlaybackTime: music_player_digital_level_meter.total_playback_time
+     currentlyPlayingTime: music_player_digital_level_meter.currently_playing_time
+     modeHiRes: music_player_digital_level_meter.meta_data["is_high_resolution"]
+--- a/sid_0511_dc_phase_linearizer/DcPhaseLinearizer.qml
++++ b/sid_0511_dc_phase_linearizer/DcPhaseLinearizer.qml
+@@ -123,7 +123,8 @@
+         id: typeImage
+         anchors { top: soundSettingHeader.bottom; left: parent.left}
+         width: p.typeImageWidth
+-        height: p.typeImageHeight
++        height: Math.max(p.typeImageHeight * 0.8, Math.min(p.typeImageHeight, base.height - soundSettingHeader.height
++                         - dcPhaseLinearizerSwitch.height - p.headingHeight - p.pullDownHeight))
+         source: p.dc_phase_linearizer_image_path
+         fillMode: Image.PreserveAspectFit
+     }
+--- a/sid_0522_vinyl_processor/VinylProcessor.qml
++++ b/sid_0522_vinyl_processor/VinylProcessor.qml
+@@ -197,7 +197,8 @@
+       left: parent.left;
+     }
+     width: p.type_image_width
+-    height: p.type_image_height
++    height: Math.max(p.type_image_height * 0.8, Math.min(p.type_image_height, base.height - sound_setting_header.height
++                     - vinyl_processor_switch.height - p.heading_height - p.pulldown_height))
+     source: p.vinyl_processor_image_path
+     fillMode: Image.PreserveAspectFit
+   }
+--- a/sid_5301_language_setting/LanguageSetting.qml
++++ b/sid_5301_language_setting/LanguageSetting.qml
+@@ -162,7 +162,7 @@
+     ListView {
+         id: list
+         width: 480
+-        height: 501
++        height: Math.min(501, languageSetting.height - title.height - 92)
+         maximumFlickVelocity: 8000
+         onAtYBeginningChanged: languageSetting.setState()
+         onAtYEndChanged: languageSetting.setState()
+--- a/sid_0502_user_preset/UserPreset.qml
++++ b/sid_0502_user_preset/UserPreset.qml
+@@ -112,7 +112,8 @@
+     ListView {
+         id: presetList
+         enabled: !(base.is_source_direct || base.is_clear_audio_plus)
+-        anchors { top: main_separator.bottom; left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: p.presetListButtomMargin}
++        anchors { top: main_separator.bottom; left: parent.left; right: parent.right; bottom: parent.bottom;
++                  bottomMargin: Math.min(p.presetListButtomMargin, p.reqistButtonBottomMargin + p.reqistButtonHeight + 8) }
+         model: user_preset_list
+         interactive: false
+         delegate: delegate

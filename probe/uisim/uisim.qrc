@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/uisim">
+        <file>Preview.qml</file>
+    </qresource>
+</RCC>

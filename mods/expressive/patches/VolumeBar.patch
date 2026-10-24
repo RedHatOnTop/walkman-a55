@@ -1,0 +1,44 @@
+--- a/components/VolumeBar.qml
++++ b/components/VolumeBar.qml
+@@ -17,6 +17,9 @@
+     property bool visibleAvlsMark: false
+     property int avlsVolumeMax: 0                       // AVLS Volume Max値
+     property bool isAvlsOn: false
++    // wmmod: on the tinted backdrop the black tick mask cannot be used, so
++    // the meter is drawn as a thin rounded track instead
++    property bool wmTint: viewstyle.wm ? viewstyle.wm.tint : false
+ 
+     width: barWidth
+     height: barHeight
+@@ -27,8 +30,10 @@
+         anchors.top: parent.top
+         anchors.left: parent.left
+         anchors.leftMargin: -1      // volume bar 左端のみマスク画像の1Blockが 2dotのため.
+-        color: baseColor
+-        height: barHeight
++        anchors.topMargin: base.wmTint ? 2 : 0
++        color: base.wmTint ? viewstyle.wm.surfaceContainerHigh : baseColor
++        height: base.wmTint ? 4 : barHeight
++        radius: base.wmTint ? 2 : 0
+         width: isAvlsOn === false ? parent.width : (oneValue * avlsVolumeMax)
+         clip: true
+ 
+@@ -37,8 +42,9 @@
+             id: barVolume
+             anchors.top: barBase.top
+             anchors.left: barBase.left
+-            color: barColor
++            color: base.wmTint ? viewstyle.wm.primary : barColor
+             height: barBase.height
++            radius: barBase.radius
+             width: currentValue * oneValue
+         }
+     }
+@@ -46,6 +52,7 @@
+     Image {
+         id: barFillter
+         anchors.top: barBase.top
++        opacity: base.wmTint ? 0 : 1
+         anchors.left: barBase.left
+         source: "qrc:/assets/images/ic_volumebar_volume_meter_template.png"
+         clip: true

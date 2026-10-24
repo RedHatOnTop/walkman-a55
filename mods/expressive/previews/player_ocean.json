@@ -1,0 +1,48 @@
+{
+  "screen": "qrc:/sid_0201_player/MusicPlayerDefault.qml",
+  "window": "qrc:/window/PlayerWindow.qml",
+  "backdrop": "qrc:/components/WmBackdrop.qml",
+  "screenInfo": {
+    "y": 66,
+    "height": 584
+  },
+  "available": true,
+  "cover": "ocean.png",
+  "values": {
+    "meta_data": {
+      "play_title": "밤편지",
+      "artist_name": "아이유",
+      "album_name": "Palette",
+      "is_high_resolution": false,
+      "lyrics_status": 0
+    },
+    "entry_id": "1",
+    "update_db_counter": 0,
+    "total_playback_time": 253000,
+    "currently_playing_time": 142000,
+    "currentry_playtrack_num": 7,
+    "total_playtrack_num": 10,
+    "is_activated": true
+  },
+  "windowValues": {
+    "headerArea": {
+      "objectName": "headerArea",
+      "useVolumeArea": true,
+      "volume": 43
+    },
+    "navigationBar": {
+      "objectName": "navigationBar"
+    },
+    "basicPlayerControls": {
+      "objectName": "basicPlayerControls",
+      "dispMode": 1,
+      "playTitle": "밤편지",
+      "playState": false,
+      "playerButtonEnabled": true,
+      "shuffleState": true,
+      "shuffleVisible": true,
+      "repeatModeState": 0,
+      "repeatModeVisible": true
+    }
+  }
+}

@@ -1,0 +1,27 @@
+--- a/framework/FrameWork.qml
++++ b/framework/FrameWork.qml
+@@ -1456,4 +1456,24 @@
+       }
+     }
+   }
++
++  // wmmod: proof that the overlay is active
++  Rectangle {
++    z: 100000
++    anchors.left: parent.left
++    anchors.bottom: parent.bottom
++    anchors.margins: 4
++    width: badge.contentWidth + 12
++    height: badge.contentHeight + 6
++    color: "#00ccff"
++    Text {
++      id: badge
++      anchors.centerIn: parent
++      text: "wmmod"
++      color: "black"
++      // The device only has the app's own fonts; Qt's default family draws nothing there.
++      font.family: appFont.fontFamily
++      font.pixelSize: 16
++    }
++  }
+ }

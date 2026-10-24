@@ -1,0 +1,46 @@
+--- a/probe/android/container/init.aosp.rc	2026-10-15 19:44:01.170919810 +0900
++++ b/probe/android/container/init.aosp.rc	2026-10-15 19:46:19.367831389 +0900
+@@ -105,6 +105,9 @@
+     mkdir /data/misc 01771 system misc
+     mkdir /data/misc/adb 02750 system shell
+     mkdir /data/misc/bluetooth 0770 system system
++    # bluedroid (bluetooth.default.so) keeps bt_config.xml, the pairing keys and
++    # its a2dp sockets here; the Fire/CM ramdisk init.rc makes it the same way.
++    mkdir /data/misc/bluedroid 0770 bluetooth net_bt_stack
+     mkdir /data/misc/keychain 0771 system system
+     mkdir /data/misc/net 0750 root shell
+     mkdir /data/misc/radio 0770 system radio
+@@ -166,6 +169,33 @@
+     setprop dalvik.vm.image-dex2oat-Xms 16m
+     setprop dalvik.vm.image-dex2oat-Xmx 96m
+ 
++    # Bluetooth, MTK CONSYS stack from the CM image (libbt-vendor.so ->
++    # libbluetooth_mtk.so). See devlog/2026-10-15-bt-consys-groundwork.md.
++    #
++    # The chip is brought up by the Sony host (6620_launcherA + the mtk_stp_*_soc
++    # modules); the container only opens /dev/stpbt. libbluetooth_mtk.so reads one
++    # property, persist.mtk.wcn.combo.chipid, and runs its HCI init script only
++    # for 0x8127 ("Unknown combo chip id" / "No matching init script" for any
++    # other value). This kernel reports 0x8590. Sony's own libbtdrv.so runs
++    # bt_init_script_consys for it, which sends the same HCI vendor commands as
++    # CM's 0x8127 script (BD address, radio, TX power offset, sleep timeout,
++    # reset, FW syslog; Sony adds a PCM/SCO block that CM keeps in a separate,
++    # empty script), and Sony's 0x8590 default record equals CM's 0x8127 one apart
++    # from the placeholder address. So tell CM's code the chip is a 0x8127. This
++    # is a container-local property; the host's value is untouched.
++    setprop persist.mtk.wcn.combo.chipid 0x8127
++    # service.nvram_init is deliberately left unset. libbluetooth_mtk.so then
++    # waits 5 s (10 x 0.5 s) and falls back to its built-in default record
++    # instead of calling libnvram. Setting it to Ready skips the wait but makes
++    # libnvram try /data/nvram, which nothing in this container populates.
++    #
++    # Services that must NOT be added to this file (android-boot.sh refuses to
++    # start if one appears): wmt_loader / wmtLoader (re-probes the chip and
++    # rewrites the chipid property), 6620_launcher / conn_launcher (opens
++    # /dev/stpwmt, which does not exist on this kernel; the node is
++    # /dev/stpwmtA and Sony's launcher on the host holds it), nvram_daemon /
++    # NvRAMAgent (restores from the NVRAM partition).
++
+     # AOSP/CM SurfaceFlinger takes panel rotation from ro.sf.hwrotation (set in
+     # default.aosp.prop), not FireOS's persist.panel.orientation, so that setprop
+     # is dropped here. The ford system.prop ships ro.sf.hwrotation=270 for the

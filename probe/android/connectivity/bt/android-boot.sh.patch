@@ -1,0 +1,179 @@
+--- a/probe/android/android-boot.sh	2026-10-15 19:44:01.168806440 +0900
++++ b/probe/android/android-boot.sh	2026-10-15 19:45:08.899032281 +0900
+@@ -70,6 +70,58 @@
+     done
+ }
+ 
++# --- Bluetooth: see devlog/2026-10-15-bt-consys-groundwork.md ----------------
++#
++# Sony's BlueAngel daemon, mtkbt, is an init service (init.rc "start mtkbt"),
++# not a hagodaemon, so hagodaemons.sh stop leaves it running. It is the only
++# host process that opens /dev/stpbt (through libbtdrv.so's mtk_bt_enable, on a
++# BT-on request from BtCommonService). The kernel node (stp_chrdev_bt.c) does
++# not refuse a second opener: both would share one rx queue, and either close
++# turns the BT function off for both. So mtkbt is stopped before the container
++# can open the node.
++#
++# 6620_launcherA is deliberately left running. The WMT driver asks it for the
++# firmware patches over /dev/stpwmtA on every chip power-on ("srh_patch"), so
++# Bluetooth in the container cannot power the chip up without it. The patches
++# themselves are read by the kernel from the host's /system/etc/firmware, so the
++# container needs no firmware files.
++bt_holders()
++{
++    for p in /proc/[0-9]*; do
++        $BB ls -l $p/fd 2>/dev/null | $BB grep -q '/dev/stpbt' && echo "${p#/proc/}"
++    done
++}
++
++bt_host_release()
++{
++    say "release /dev/stpbt from the Sony stack"
++    if $BB ps | $BB grep -q '[m]tkbt'; then
++        stop mtkbt
++        for i in $($BB seq 10); do
++            $BB ps | $BB grep -q '[m]tkbt' || break
++            $BB sleep 1
++        done
++    fi
++    # Warnings, not die: a Bluetooth problem must not stop the graphics bring-up.
++    $BB ps | $BB grep -q '[m]tkbt' && echo "!! mtkbt is still running"
++    $BB ps | $BB grep -q '[6]620_launcherA' || echo "!! 6620_launcherA is not running: Bluetooth cannot power the chip up"
++    [ -c /dev/stpbt ] || echo "!! no /dev/stpbt on the host"
++    held="$(bt_holders)"
++    [ -z "$held" ] || echo "!! /dev/stpbt is still open in pid(s): $held"
++}
++
++# Read-only report; safe at any time, container up or not.
++btcheck()
++{
++    say "Bluetooth, host side"
++    $BB ps | $BB grep -E '[m]tkbt|[6]620_launcher|[n]vram_daemon' || echo "(mtkbt, 6620_launcherA, nvram_daemon: none running)"
++    $BB ls -l /dev/stpbt /dev/stpwmtA /dev/wmtdetect 2>&1
++    echo "persist.mtk.wcn.combo.chipid = [$(getprop persist.mtk.wcn.combo.chipid)]"
++    echo "service.nvram_init = [$(getprop service.nvram_init)]"
++    echo "pids holding /dev/stpbt: [$(bt_holders)]"
++    $BB grep -E '^(mtk_stp_bt_soc|mtk_stp_wmt_soc|mtk_wmt_detect) ' /proc/modules
++}
++
+ prepare()
+ {
+     say "stop the Sony stack"
+@@ -135,6 +187,18 @@
+         [ -e "$f" ] && die "refusing to start: $f would hand vold the real partitions"
+     done
+ 
++    # The CM image carries MTK's own connectivity bring-up. None of it may run in
++    # the container: Sony's 6620_launcherA on the host already owns the chip (and
++    # the node is /dev/stpwmtA, CM's 6620_launcher opens /dev/stpwmt), wmt_loader
++    # would re-probe the chip and overwrite persist.mtk.wcn.combo.chipid, and
++    # nvram_daemon would restore from the NVRAM partition. Fail loudly if one of
++    # them is ever added to the container init.
++    for f in $ROOT/init*.rc; do
++        [ -e "$f" ] || continue
++        $BB grep -qE '^service[[:space:]]+(wmt_loader|wmtLoader|6620_launcher|conn_launcher|66xx_launcher[AC]?|nvram_daemon|NvRAMAgent)[[:space:]]' "$f" && \
++            die "refusing to start: $f runs MTK connectivity bring-up or nvram_daemon in the container"
++    done
++
+     # ART's Runtime::Init runs mount("rootfs", "/", NULL, MS_SLAVE|MS_REC, NULL)
+     # and gives up ("CreateJavaVM failed") when that fails. Changing mount
+     # propagation needs the target to be a mount point, so bind the container
+@@ -209,9 +273,35 @@
+         $BB mount -o bind /tmp/idc-overlay $ROOT/system/usr/idc || die "idc overlay bind failed"
+         echo "idc overlay: $($BB ls /tmp/idc-overlay | $BB tr '\n' ' ')"
+     fi
++    # Optional, off unless /tmp/libnvram-btshim.so was pushed: lets the container
++    # pick the Bluetooth BD address. libbluetooth_mtk.so imports only
++    # NVM_GetFileDesc / NVM_CloseFileDesc from libnvram.so; the shim serves its
++    # 64-byte record from /data/nw/bt_nvram.bin (below) instead of the NVRAM
++    # tree and partition. Nothing else in the container loads libnvram.so (the
++    # stock audio HAL that did is replaced). Built by
++    # probe/android/connectivity/bt/nvram-shim/build.sh.
++    if [ -f /tmp/libnvram-btshim.so ]; then
++        nv="$ROOT/system/lib/libnvram.so"
++        [ -e "$nv" ] || die "no libnvram.so on the system image to shadow"
++        $BB chmod 644 /tmp/libnvram-btshim.so
++        $BB grep -q " $nv " /proc/mounts || \
++            $BB mount -o bind /tmp/libnvram-btshim.so "$nv" || die "libnvram shim bind failed"
++        $BB mount -o remount,bind,ro "$nv" || die "libnvram shim remount ro failed"
++        echo "libnvram shim: $nv <- /tmp/libnvram-btshim.so (ro)"
++    fi
+     $BB mkdir -p $VOL
+     $BB mount -o loop,rw -t ext4 "$C/$DATAIMG" $VOL || die "data loop mount failed"
+     $BB mkdir -p $VOL/data $VOL/cache
++    # BD-address seed for the libnvram shim: gen-bt-nvram.py -> /tmp/bt_nvram.bin.
++    # The directory is world-writable so the bluetooth uid can leave
++    # bt_nvram.written (the address the stack settled on) next to it.
++    if [ -f /tmp/bt_nvram.bin ]; then
++        $BB mkdir -p $VOL/data/nw
++        $BB chmod 777 $VOL/data/nw
++        $BB cp /tmp/bt_nvram.bin $VOL/data/nw/bt_nvram.bin
++        $BB chmod 644 $VOL/data/nw/bt_nvram.bin
++        echo "bt seed: $VOL/data/nw/bt_nvram.bin ($($BB wc -c < /tmp/bt_nvram.bin) bytes)"
++    fi
+     $BB mount -o bind $VOL/data $ROOT/data || die "data bind failed"
+     $BB mount -o bind $VOL/cache $ROOT/cache || die "cache bind failed"
+     $BB df -h $ROOT/system $ROOT/data | $BB tail -2
+@@ -313,6 +403,7 @@
+ up()
+ {
+     prepare
++    bt_host_release
+     zram
+     swap
+     container
+@@ -321,6 +412,7 @@
+     $BB sleep 12
+     status
+     log
++    if [ -n "$(container_init_pid)" ]; then btdev; fi
+ }
+ 
+ status()
+@@ -348,6 +440,28 @@
+         /tmp/pivotinit --join "$pid" /system/bin/sh -c "$1"
+ }
+ 
++# Inside the container: is /dev/stpbt there, and who owns it? ueventd's coldboot
++# makes it from /sys/class/stpbt/stpbt (class device of mtk_stp_bt_soc, major
++# 192) under the "bluetooth radio 0660" rule in ueventd.icx.rc, the same way it
++# makes /dev/snd/*. A bind from the host cannot be used: Android init mounts a
++# fresh tmpfs on the container's /dev after container() returns, which would
++# cover it. So report, and mknod only if ueventd did not.
++btdev()
++{
++    say "/dev/stpbt in the container"
++    sh_in '
++        if [ ! -c /dev/stpbt ]; then
++            devno="$(cat /sys/class/stpbt/stpbt/dev 2>/dev/null)"
++            [ -n "$devno" ] || devno=192:0
++            echo "ueventd did not create /dev/stpbt; mknod c ${devno%%:*} ${devno##*:}"
++            /system/xbin/mknod /dev/stpbt c ${devno%%:*} ${devno##*:}
++            /system/xbin/chown 1002:1001 /dev/stpbt
++            /system/xbin/chmod 0660 /dev/stpbt
++        fi
++        ls -l /dev/stpbt
++    '
++}
++
+ down()
+ {
+     say "stop the container"
+@@ -362,6 +476,7 @@
+     for i in 1 2 3 4 5; do
+         $BB umount "$ROOT/system/media/audio/ui" 2>/dev/null
+         $BB umount "$ROOT/system/lib/hw/audio.primary.mt8127.so" 2>/dev/null
++        $BB umount "$ROOT/system/lib/libnvram.so" 2>/dev/null
+         $BB umount "$ROOT/system/usr/idc" 2>/dev/null
+         $BB umount $ROOT/dev/pts $ROOT/dev $ROOT/proc $ROOT/sys \
+             $ROOT/data $ROOT/cache $ROOT/system $ROOT $VOL 2>/dev/null
+@@ -393,6 +508,8 @@
+ status) status ;;
+ log) log ;;
+ down) down ;;
++btcheck) btcheck ;;
++btdev) btdev ;;
+ sh) shift; sh_in "$*" ;;
+-*) die "usage: android-boot.sh prepare | up | status | sh CMD | log | down" ;;
++*) die "usage: android-boot.sh prepare | up | status | sh CMD | log | down | btcheck | btdev" ;;
+ esac

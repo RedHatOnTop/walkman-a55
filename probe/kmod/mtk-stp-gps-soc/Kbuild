@@ -1,0 +1,21 @@
+# Out-of-tree kbuild file for mtk_stp_gps_soc.ko, the /dev/stpgps chardev of the
+# MT8590 CONSYS. Include paths and defines are the ones the Wi-Fi bundle uses for
+# its chardev (work/wifitest/bundle/WIFITEST/src-mtk_wmt_wifi_soc/Makefile), which
+# in turn mirror drivers/misc/mediatek/Makefile:138 and conn_soc/common/Makefile
+# of Sony's tree. $(srctree) is the kernel tree given to make -C.
+include $(srctree)/drivers/misc/mediatek/Makefile.custom
+
+CONN := $(srctree)/drivers/misc/mediatek/conn_soc/common
+
+ccflags-y += -I$(CONN)/linux/include \
+             -I$(CONN)/linux/pri/include \
+             -I$(CONN)/core/include \
+             -I$(CONN)/include \
+             -I$(CONN)/mt8590/include \
+             -I$(CONN)/ \
+             -I$(CONN)/../../btif/inc \
+             -I$(CONN)/../../common_detect
+ccflags-y += -DWMT_PLAT_ALPS -DWMT_CREATE_NODE_DYNAMIC=1 -DMTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
+
+obj-m += mtk_stp_gps_soc.o
+mtk_stp_gps_soc-objs := stp_chrdev_gps_soc.o

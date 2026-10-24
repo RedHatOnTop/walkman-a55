@@ -1,0 +1,22 @@
+Mali Utgard r4p0 kernel driver (_MALI_API_VERSION 401), the side the
+user-space libMali.so (r4p0-00rel0) of FireOS 5 for ford and austin speaks.
+
+The code is Amazon's Fire 7 (ford, MT8127) kernel's copy, as mirrored by
+https://github.com/chaosmaster/android_kernel_amazon_ford
+commit 5b71ce8bab684cff2534bee0175b5579f5f1b9e1
+path drivers/misc/mediatek/gpu/mt8127/mali/mali, and mediatek/ from
+drivers/misc/mediatek/gpu/mt8127/mediatek of the same commit: ARM's
+r4p0-00rel0 with MediaTek's changes (30 files, 849 lines) and MediaTek's
+platform/, mtk_common/ and Kbuild-mtk-custom-* beside it.
+
+That copy's files carry ARM's notice for licensees of the DDK. ARM released
+the same driver under GPL v2 as DX910-SW-99002-r4p0-00rel0.tgz
+(http://malideveloper.arm.com/downloads/drivers/DX910/r4p0-00rel0/, now gone;
+the Internet Archive's capture of 2015-03-23, sha256
+0f33a31cbcd6839e4dc4588e1a0148b324de5db673a85737579af91aa89ee639, sha1 as the
+capture records it). 109 of the 139 files the two have in common are the
+same code. Every file here that had ARM's DDK notice has the GPL notice of
+the same file in that release instead, line for line, so line numbers and
+the built module's code are unchanged (2026-10-23: .text, .rodata and .data
+of mali_r4p0.ko compared equal). Dropped: the three *.orig files and
+linux/license/proprietary, which the GPL build never includes.

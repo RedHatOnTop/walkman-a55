@@ -1,0 +1,28 @@
+{
+  "screen": "qrc:/sid_0201_player/MusicPlayerDefault.qml",
+  "window": "qrc:/window/PlayerWindow.qml",
+  "values": {
+    "meta_data": {
+      "play_title": "Test Track Title",
+      "artist_name": "Test Artist",
+      "album_name": "Test Album",
+      "is_high_resolution": true,
+      "lyrics_status": 0,
+      "sound_quality_string": "FLAC 96kHz/24bit"
+    },
+    "total_playback_time": 245000,
+    "currently_playing_time": 61000,
+    "currentry_playtrack_num": 3,
+    "total_playtrack_num": 12,
+    "is_activated": true
+  },
+  "windowValues": {
+    "headerArea": {
+      "objectName": "headerArea",
+      "useVolumeArea": false
+    },
+    "navigationBar": {
+      "objectName": "navigationBar"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A2DP-only Bluetooth: the Walkman has no calls, and an advertised HFP/HSP gateway lets a
+     headset drop into narrowband SCO. AVRCP lives inside A2dpService, so it stays. GATT (BLE)
+     stays on: it is not a classic profile a headset connects to. Profiles CM already ships off
+     (a2dp_sink, hfpclient, avrcp_controller) are left alone. -->
+<resources>
+    <bool name="profile_supported_hs_hfp">false</bool>
+    <bool name="profile_supported_pbap">false</bool>
+    <bool name="profile_supported_map">false</bool>
+    <bool name="profile_supported_opp">false</bool>
+    <bool name="profile_supported_pan">false</bool>
+    <bool name="profile_supported_hid">false</bool>
+    <bool name="profile_supported_hidd">false</bool>
+    <bool name="profile_supported_hdp">false</bool>
+</resources>

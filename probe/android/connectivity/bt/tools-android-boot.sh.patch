@@ -1,0 +1,46 @@
+--- a/tools/android-boot.sh	2026-10-15 19:46:30.530377029 +0900
++++ b/tools/android-boot.sh	2026-10-15 19:46:30.546994964 +0900
+@@ -10,6 +10,8 @@
+ #   tools/android-boot.sh log         show the container's kernel log lines
+ #   tools/android-boot.sh down        stop the container
+ #   tools/android-boot.sh pull        copy the container logs into work/android
++#   tools/android-boot.sh btcheck     Bluetooth state on the Sony host (read-only)
++#   tools/android-boot.sh btdev       /dev/stpbt inside the running container
+ #
+ # The device needs a reboot afterwards to get the stock Mali driver and the
+ # Sony UI back.
+@@ -81,6 +83,16 @@
+     for idc in "$ROOT"/probe/android/idc/*.idc; do
+         "${A[@]}" push "$idc" /tmp/idc-overlay/ > /dev/null
+     done
++    # Optional Bluetooth BD-address control (probe/android/connectivity/bt):
++    # both NW_BT_SHIM (the built libnvram-btshim.so) and NW_BT_SEED (the file
++    # gen-bt-nvram.py wrote) must be set; otherwise stale copies are removed so
++    # the container uses libbluetooth_mtk's built-in default record.
++    "${A[@]}" shell "/system/xbin/busybox rm -f /tmp/libnvram-btshim.so /tmp/bt_nvram.bin"
++    if [ -n "${NW_BT_SHIM:-}" ] && [ -n "${NW_BT_SEED:-}" ]; then
++        "${A[@]}" push "$NW_BT_SHIM" /tmp/libnvram-btshim.so > /dev/null
++        "${A[@]}" push "$NW_BT_SEED" /tmp/bt_nvram.bin > /dev/null
++        echo "Bluetooth: libnvram shim and BD-address seed pushed"
++    fi
+     "${A[@]}" push "$ROOT/work/android/container.tgz" /tmp/container.tgz > /dev/null
+     "${A[@]}" shell "sh /tmp/android-boot.sh prepare"
+     push_once "$IMG" "/tmp/c/$SYS_NAME"
+@@ -96,7 +108,7 @@
+     fi
+     "${A[@]}" shell "sh /tmp/android-boot.sh up"
+     ;;
+-status|log|down|prepare)
++status|log|down|prepare|btcheck|btdev)
+     push_helpers
+     "${A[@]}" shell "sh /tmp/android-boot.sh $CMD"
+     ;;
+@@ -114,7 +126,7 @@
+     ls -l "$OUT"
+     ;;
+ *)
+-    echo "usage: tools/android-boot.sh up | status | sh CMD | log | down | pull" >&2
++    echo "usage: tools/android-boot.sh up | status | sh CMD | log | down | pull | btcheck | btdev" >&2
+     exit 2
+     ;;
+ esac

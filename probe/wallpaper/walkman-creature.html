@@ -1,0 +1,381 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Walkman Creature</title>
+<style>
+  @font-face { font-family: "Mont"; font-weight: 600; src: url("file:///usr/share/fonts/julietaula-montserrat-fonts/Montserrat-SemiBold.otf"); }
+  @font-face { font-family: "Mont"; font-weight: 800; src: url("file:///usr/share/fonts/julietaula-montserrat-fonts/Montserrat-ExtraBold.otf"); }
+  html, body { margin: 0; background: #0b0c12; }
+  svg { display: block; width: 480px; height: 800px; }
+</style>
+</head>
+<body>
+<svg id="s" viewBox="0 0 480 800" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#09090f"/>
+    <stop offset="0.38" stop-color="#110f19"/>
+    <stop offset="0.66" stop-color="#1c1419"/>
+    <stop offset="0.85" stop-color="#26150f"/>
+    <stop offset="1" stop-color="#26150f"/>
+  </linearGradient>
+  <radialGradient id="glow" cx="240" cy="578" r="300" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#ff7a2e" stop-opacity="0.42"/>
+    <stop offset="0.35" stop-color="#e2581c" stop-opacity="0.18"/>
+    <stop offset="0.7" stop-color="#8a2c12" stop-opacity="0.06"/>
+    <stop offset="1" stop-color="#000" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="discFill" cx="240" cy="560" r="200" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#ff9a52" stop-opacity="0.10"/>
+    <stop offset="0.8" stop-color="#ff7a2e" stop-opacity="0.05"/>
+    <stop offset="1" stop-color="#ff7a2e" stop-opacity="0.02"/>
+  </radialGradient>
+  <radialGradient id="grilleFade" cx="240" cy="560" r="200" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#fff" stop-opacity="0.15"/>
+    <stop offset="0.55" stop-color="#fff" stop-opacity="0.6"/>
+    <stop offset="0.93" stop-color="#fff" stop-opacity="1"/>
+    <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </radialGradient>
+  <mask id="grilleMask"><circle cx="240" cy="560" r="196" fill="url(#grilleFade)"/></mask>
+  <pattern id="grille" width="7" height="12.124" patternUnits="userSpaceOnUse" x="240" y="560">
+    <circle cx="0" cy="0" r="1.05" fill="#ffc48c"/>
+    <circle cx="7" cy="0" r="1.05" fill="#ffc48c"/>
+    <circle cx="3.5" cy="6.062" r="1.05" fill="#ffc48c"/>
+    <circle cx="0" cy="12.124" r="1.05" fill="#ffc48c"/>
+    <circle cx="7" cy="12.124" r="1.05" fill="#ffc48c"/>
+  </pattern>
+  <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#2b1810"/>
+    <stop offset="0.4" stop-color="#150d0b"/>
+    <stop offset="1" stop-color="#09080a"/>
+  </linearGradient>
+  <linearGradient id="horizon" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#ffb070" stop-opacity="0"/>
+    <stop offset="0.5" stop-color="#ffb070" stop-opacity="0.45"/>
+    <stop offset="1" stop-color="#ffb070" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="reflFade" x1="0" y1="680" x2="0" y2="760" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#fff" stop-opacity="0.9"/>
+    <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffe2b8" stop-opacity="0"/>
+    <stop offset="0.45" stop-color="#ffd8a8" stop-opacity="0.035"/>
+    <stop offset="1" stop-color="#ffc890" stop-opacity="0.10"/>
+  </linearGradient>
+  <filter id="soft14" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter>
+  <mask id="reflMask"><rect x="0" y="680" width="480" height="120" fill="url(#reflFade)"/></mask>
+
+  <linearGradient id="bodyGrad" x1="0" y1="500" x2="0" y2="640" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#fdf5e7"/>
+    <stop offset="0.55" stop-color="#f1e2c8"/>
+    <stop offset="1" stop-color="#d8bd95"/>
+  </linearGradient>
+  <linearGradient id="legGrad" x1="0" y1="630" x2="0" y2="678" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#cdb18a"/>
+    <stop offset="0.35" stop-color="#e8d6b8"/>
+    <stop offset="1" stop-color="#c4a57c"/>
+  </linearGradient>
+  <linearGradient id="labelGrad" x1="0" y1="514" x2="0" y2="602" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#fffaf1"/>
+    <stop offset="1" stop-color="#f6ead5"/>
+  </linearGradient>
+  <linearGradient id="windowGrad" x1="0" y1="547" x2="0" y2="591" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#2c211c"/>
+    <stop offset="1" stop-color="#110c0a"/>
+  </linearGradient>
+  <radialGradient id="eyeGrad" cx="0.38" cy="0.32" r="0.75">
+    <stop offset="0" stop-color="#ffffff"/>
+    <stop offset="0.7" stop-color="#f7f1e7"/>
+    <stop offset="1" stop-color="#ddd2c0"/>
+  </radialGradient>
+  <radialGradient id="hubGrad" cx="0.4" cy="0.35" r="0.7">
+    <stop offset="0" stop-color="#4a3a31"/>
+    <stop offset="1" stop-color="#1a1310"/>
+  </radialGradient>
+  <linearGradient id="plateGrad" x1="0" y1="604" x2="0" y2="640" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#eadabd"/>
+    <stop offset="1" stop-color="#d2b68d"/>
+  </linearGradient>
+  <radialGradient id="padGrad" cx="0.42" cy="0.38" r="0.7">
+    <stop offset="0" stop-color="#ffa35a"/>
+    <stop offset="0.55" stop-color="#ff7414"/>
+    <stop offset="1" stop-color="#cf4c00"/>
+  </radialGradient>
+  <linearGradient id="housingGrad" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#5a5b64"/>
+    <stop offset="0.5" stop-color="#2d2e35"/>
+    <stop offset="1" stop-color="#16171b"/>
+  </linearGradient>
+  <linearGradient id="steel" x1="0" y1="448" x2="0" y2="545" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#f1f2f5"/>
+    <stop offset="0.5" stop-color="#b8bcc5"/>
+    <stop offset="1" stop-color="#7d828c"/>
+  </linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#f6dfa2"/>
+    <stop offset="0.5" stop-color="#d3a957"/>
+    <stop offset="1" stop-color="#9c732c"/>
+  </linearGradient>
+  <linearGradient id="noteGold" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffe3a0"/>
+    <stop offset="1" stop-color="#d9a64e"/>
+  </linearGradient>
+
+  <filter id="soft2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2"/></filter>
+  <filter id="soft5" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
+  <filter id="soft9" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
+  <filter id="reflBlur" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="1.6"/></filter>
+  <filter id="foam" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="1.6" numOctaves="2" seed="7" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.14  0 0 0 0 0  0 0 0 -2.4 1.45" result="dots"/>
+    <feComposite in="dots" in2="SourceGraphic" operator="in" result="tex"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="tex"/></feMerge>
+  </filter>
+  <filter id="noteGlow" x="-100%" y="-100%" width="300%" height="300%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+
+  <clipPath id="bodyClip"><rect x="135" y="500" width="210" height="140" rx="28"/></clipPath>
+  <clipPath id="windowClip"><rect x="176" y="547" width="128" height="44" rx="22"/></clipPath>
+  <clipPath id="mouthClip"><path d="M227 611 Q240 614 253 611 Q252 627 240 628 Q228 627 227 611 Z"/></clipPath>
+</defs>
+
+<rect width="480" height="800" fill="url(#sky)"/>
+<rect width="480" height="800" fill="url(#glow)"/>
+
+<path d="M214 -10 L266 -10 L392 690 L88 690 Z" fill="url(#beam)" filter="url(#soft14)"/>
+
+<g id="speaker">
+  <circle cx="240" cy="560" r="200" fill="url(#discFill)"/>
+  <rect x="40" y="360" width="400" height="400" fill="url(#grille)" opacity="0.13" mask="url(#grilleMask)"/>
+  <circle cx="240" cy="560" r="200" fill="none" stroke="#e8bb6a" stroke-opacity="0.28" stroke-width="1"/>
+  <circle cx="240" cy="560" r="188" fill="none" stroke="#ffb074" stroke-opacity="0.07" stroke-width="9"/>
+  <circle cx="240" cy="560" r="176" fill="none" stroke="#e8bb6a" stroke-opacity="0.10" stroke-width="0.8"/>
+  <circle cx="240" cy="560" r="212" fill="none" stroke="#e8bb6a" stroke-opacity="0.07" stroke-width="0.8" stroke-dasharray="1 5"/>
+  <circle cx="240" cy="560" r="252" fill="none" stroke="#e8bb6a" stroke-opacity="0.045" stroke-width="0.8"/>
+  <circle cx="240" cy="560" r="300" fill="none" stroke="#e8bb6a" stroke-opacity="0.03" stroke-width="0.8"/>
+  <circle cx="240" cy="560" r="356" fill="none" stroke="#e8bb6a" stroke-opacity="0.02" stroke-width="0.8"/>
+</g>
+
+<rect x="0" y="680" width="480" height="120" fill="url(#floor)"/>
+<rect x="0" y="679.4" width="480" height="1.2" fill="url(#horizon)"/>
+
+<g id="reflection" mask="url(#reflMask)" opacity="0.22" filter="url(#reflBlur)">
+  <use href="#creature" transform="translate(0 1360) scale(1 -1)"/>
+</g>
+
+<ellipse cx="240" cy="679" rx="118" ry="8" fill="#000" opacity="0.6" filter="url(#soft5)"/>
+
+<g id="creature"><g transform="translate(0 14)">
+  <g id="cord"></g>
+
+  <!-- legs -->
+  <g fill="url(#legGrad)">
+    <path d="M158 628 h23 v24 a11.5 11.5 0 0 1 -23 0 z"/>
+    <path d="M199 628 h23 v26 a11.5 11.5 0 0 1 -23 0 z"/>
+    <path d="M258 628 h23 v26 a11.5 11.5 0 0 1 -23 0 z"/>
+    <path d="M299 628 h23 v24 a11.5 11.5 0 0 1 -23 0 z"/>
+  </g>
+  <g fill="#000" opacity="0.18">
+    <rect x="158" y="640" width="23" height="3.5" rx="1.5"/>
+    <rect x="199" y="640" width="23" height="3.5" rx="1.5"/>
+    <rect x="258" y="640" width="23" height="3.5" rx="1.5"/>
+    <rect x="299" y="640" width="23" height="3.5" rx="1.5"/>
+  </g>
+
+  <!-- left arm -->
+  <path d="M142 604 Q132 610 125 621" fill="none" stroke="#e3cfae" stroke-width="18" stroke-linecap="round"/>
+  <path d="M141 600 Q133 605 127 614" fill="none" stroke="#fbf1e1" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+  <!-- right arm, waving -->
+  <path d="M338 601 Q354 598 366 582" fill="none" stroke="#e3cfae" stroke-width="18" stroke-linecap="round"/>
+  <path d="M339 597 Q352 594 362 581" fill="none" stroke="#fbf1e1" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+  <g stroke="#ffd59a" stroke-width="1.6" stroke-linecap="round" fill="none" opacity="0.75">
+    <path d="M379 566 q5 -4 6 -10"/>
+    <path d="M384 575 q7 -3 10 -9"/>
+  </g>
+
+  <!-- body -->
+  <g clip-path="url(#bodyClip)">
+    <rect x="135" y="500" width="210" height="140" fill="url(#bodyGrad)"/>
+    <ellipse cx="240" cy="652" rx="150" ry="30" fill="#9c7650" opacity="0.38" filter="url(#soft9)"/>
+    <rect x="334" y="496" width="26" height="150" fill="#ff8a3d" opacity="0.38" filter="url(#soft5)"/>
+    <rect x="120" y="496" width="22" height="150" fill="#ff8a3d" opacity="0.16" filter="url(#soft5)"/>
+    <ellipse cx="190" cy="500" rx="90" ry="10" fill="#fff" opacity="0.7" filter="url(#soft5)"/>
+
+    <!-- trapezoid plate (mouth) -->
+    <path d="M186 604 L294 604 L308 642 L172 642 Z" fill="url(#plateGrad)"/>
+    <path d="M186 604 L294 604" stroke="#fff8ea" stroke-width="1.2" opacity="0.9"/>
+    <path d="M186 605 L172 642 M294 605 L308 642" stroke="#b8976c" stroke-width="1" opacity="0.6"/>
+    <circle cx="203" cy="629" r="3.2" fill="#7d6347"/>
+    <circle cx="277" cy="629" r="3.2" fill="#7d6347"/>
+    <circle cx="203" cy="628.3" r="3.2" fill="none" stroke="#5f4733" stroke-width="0.8" opacity="0.6"/>
+    <circle cx="277" cy="628.3" r="3.2" fill="none" stroke="#5f4733" stroke-width="0.8" opacity="0.6"/>
+  </g>
+  <rect x="135.5" y="500.5" width="209" height="139" rx="27.5" fill="none" stroke="#fffaf0" stroke-opacity="0.55" stroke-width="1"/>
+
+  <!-- label -->
+  <rect x="160" y="512" width="160" height="88" rx="12" fill="url(#labelGrad)"/>
+  <rect x="160" y="512" width="160" height="88" rx="12" fill="none" stroke="#c9ad83" stroke-opacity="0.45" stroke-width="0.8"/>
+  <rect x="160" y="521" width="160" height="4.5" fill="#ff6a00"/>
+  <rect x="160" y="527.5" width="160" height="2" fill="#c8a24b"/>
+  <text x="169" y="542.5" font-family="Mont" font-weight="800" font-size="11" fill="#3a2a1f">A</text>
+  <text id="brand" x="240" y="541" font-family="Mont" font-weight="600" font-size="6.6" fill="#5b4532" text-anchor="middle" letter-spacing="2.2">WALKMAN</text>
+  <text x="311" y="541" font-family="Mont" font-weight="800" font-size="7" fill="#3a2a1f" text-anchor="end">C-55</text>
+
+  <!-- cheeks -->
+  <ellipse cx="180" cy="596" rx="10" ry="4.6" fill="#ff7b54" opacity="0.55" filter="url(#soft2)"/>
+  <ellipse cx="300" cy="596" rx="10" ry="4.6" fill="#ff7b54" opacity="0.55" filter="url(#soft2)"/>
+
+  <!-- window / face -->
+  <rect x="176" y="547" width="128" height="44" rx="22" fill="url(#windowGrad)"/>
+  <g clip-path="url(#windowClip)">
+    <rect x="176" y="584" width="128" height="7" fill="#5b3622" opacity="0.55"/>
+    <g id="eyeL" transform="translate(209 569)"></g>
+    <g id="eyeR" transform="translate(271 569)"></g>
+    <path d="M196 547 L214 547 L190 591 L172 591 Z" fill="#fff" opacity="0.07"/>
+    <path d="M220 547 L227 547 L203 591 L196 591 Z" fill="#fff" opacity="0.05"/>
+  </g>
+  <rect x="176.5" y="547.5" width="127" height="43" rx="21.5" fill="none" stroke="#0b0807" stroke-width="1.4"/>
+
+  <!-- mouth -->
+  <path d="M227 611 Q240 614 253 611 Q252 627 240 628 Q228 627 227 611 Z" fill="#3b1a12"/>
+  <g clip-path="url(#mouthClip)">
+    <ellipse cx="240" cy="626" rx="7.5" ry="4.2" fill="#ff7e5a"/>
+  </g>
+
+  <!-- screws -->
+  <g id="screws"></g>
+
+  <!-- headphones -->
+  <path d="M131 540 C131 474 186 449 240 449 C294 449 349 474 349 540" fill="none" stroke="#5c606a" stroke-width="7" stroke-linecap="round"/>
+  <path d="M131 540 C131 474 186 449 240 449 C294 449 349 474 349 540" fill="none" stroke="url(#steel)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M136 520 C138 476 188 452 240 452" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round" opacity="0.55"/>
+  <rect x="125.5" y="503" width="11" height="20" rx="3" fill="url(#housingGrad)"/>
+  <rect x="343.5" y="503" width="11" height="20" rx="3" fill="url(#housingGrad)"/>
+  <rect x="127.5" y="506" width="7" height="2" rx="1" fill="#d3a957"/>
+  <rect x="345.5" y="506" width="7" height="2" rx="1" fill="#d3a957"/>
+
+  <ellipse cx="119" cy="546" rx="11" ry="23" fill="url(#housingGrad)"/>
+  <ellipse cx="361" cy="546" rx="11" ry="23" fill="url(#housingGrad)"/>
+  <ellipse cx="116" cy="546" rx="3.2" ry="7" fill="url(#gold)"/>
+  <ellipse cx="364" cy="546" rx="3.2" ry="7" fill="url(#gold)"/>
+  <ellipse cx="134" cy="546" rx="17" ry="29" fill="url(#padGrad)" filter="url(#foam)"/>
+  <ellipse cx="346" cy="546" rx="17" ry="29" fill="url(#padGrad)" filter="url(#foam)"/>
+  <ellipse cx="129" cy="532" rx="6" ry="10" fill="#ffd2a4" opacity="0.45" filter="url(#soft2)"/>
+  <ellipse cx="341" cy="532" rx="6" ry="10" fill="#ffd2a4" opacity="0.45" filter="url(#soft2)"/>
+</g></g>
+
+<g id="notes" fill="url(#noteGold)" filter="url(#noteGlow)"></g>
+<g id="motes" fill="#ffd18c"></g>
+</svg>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs, parent) => {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+
+// Reel eyes: white reel, dark hub as the pupil with the six spindle teeth,
+// glancing up toward the notes.
+function eye(g) {
+  el("circle", { r: 18, fill: "url(#eyeGrad)" }, g);
+  el("circle", { r: 18, fill: "none", stroke: "#0b0807", "stroke-opacity": 0.35, "stroke-width": 1 }, g);
+  const hub = el("g", { transform: "translate(3 -2.5)" }, g);
+  el("circle", { r: 9.6, fill: "url(#hubGrad)" }, hub);
+  el("circle", { r: 4.4, fill: "none", stroke: "#d9ae5c", "stroke-width": 1.1, opacity: 0.9 }, hub);
+  for (let i = 0; i < 6; i++) {
+    el("rect", { x: -0.6, y: -4.4, width: 1.2, height: 1.9, fill: "#d9ae5c", opacity: 0.9,
+                 transform: `rotate(${i * 60 + 15})` }, hub);
+  }
+  el("circle", { cx: -3.8, cy: -4.3, r: 2.9, fill: "#fff" }, hub);
+  el("circle", { cx: 4.3, cy: 3.8, r: 1.2, fill: "#fff", opacity: 0.85 }, hub);
+}
+eye(document.getElementById("eyeL"));
+eye(document.getElementById("eyeR"));
+
+function screw(g, x, y, a) {
+  el("circle", { cx: x, cy: y + 0.6, r: 3.6, fill: "#8a6a40", opacity: 0.5 }, g);
+  el("circle", { cx: x, cy: y, r: 3.3, fill: "url(#gold)" }, g);
+  el("path", { d: `M${x - 2.1} ${y} h4.2 M${x} ${y - 2.1} v4.2`, stroke: "#6b4c22", "stroke-width": 0.9,
+               "stroke-linecap": "round", transform: `rotate(${a} ${x} ${y})` }, g);
+}
+const screws = document.getElementById("screws");
+screw(screws, 151, 517, 12); screw(screws, 329, 517, 40);
+screw(screws, 152, 626, 70); screw(screws, 328, 626, 25);
+
+// Coiled headphone cable from the left cup down to a gold jack on the floor.
+function cord(g) {
+  const p0 = [118, 568], c = [92, 640], p1 = [104, 668];
+  const pts = [];
+  const N = 520;
+  for (let i = 0; i <= N; i++) {
+    const t = i / N;
+    const bx = (1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * c[0] + t * t * p1[0];
+    const by = (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * c[1] + t * t * p1[1];
+    const dx = 2 * (1 - t) * (c[0] - p0[0]) + 2 * t * (p1[0] - c[0]);
+    const dy = 2 * (1 - t) * (c[1] - p0[1]) + 2 * t * (p1[1] - c[1]);
+    const len = Math.hypot(dx, dy);
+    const tx = dx / len, ty = dy / len, nx = -ty, ny = tx;
+    const coil = t > 0.12 && t < 0.86 ? Math.sin(Math.PI * (t - 0.12) / 0.74) ** 0.5 : 0;
+    const ph = t * 2 * Math.PI * 13;
+    const r = 4.2 * coil;
+    pts.push([bx + nx * r * Math.cos(ph) + tx * r * 0.9 * Math.sin(ph), by + ny * r * Math.cos(ph) + ty * r * 0.9 * Math.sin(ph)]);
+  }
+  pts.push([96, 674], [84, 676], [74, 676]);
+  const d = "M" + pts.map(p => p[0].toFixed(2) + " " + p[1].toFixed(2)).join(" L");
+  el("path", { d, fill: "none", stroke: "#15151a", "stroke-width": 2.6, "stroke-linecap": "round", "stroke-linejoin": "round" }, g);
+  el("path", { d, fill: "none", stroke: "#5d5e68", "stroke-width": 1.1, "stroke-linecap": "round", "stroke-linejoin": "round",
+               transform: "translate(-0.4 -0.5)" }, g);
+  el("rect", { x: 56, y: 672.5, width: 18, height: 7, rx: 2, fill: "url(#housingGrad)" }, g);
+  el("rect", { x: 47, y: 674, width: 9, height: 4, fill: "url(#gold)" }, g);
+  el("path", { d: "M47 674 L40 675 Q37.5 676 40 677 L47 678 Z", fill: "url(#gold)" }, g);
+  el("rect", { x: 44.6, y: 674.4, width: 0.9, height: 3.2, fill: "#3b2a12" }, g);
+  el("rect", { x: 50.5, y: 674, width: 0.9, height: 4, fill: "#3b2a12" }, g);
+}
+cord(document.getElementById("cord"));
+
+function note8(g, x, y, s, flip) {
+  const h = el("g", { transform: `translate(${x} ${y}) scale(${s}) rotate(${flip || 0})` }, g);
+  el("ellipse", { cx: 0, cy: 0, rx: 5.2, ry: 3.8, transform: "rotate(-22)" }, h);
+  el("rect", { x: 3.4, y: -21, width: 1.7, height: 21 }, h);
+  el("path", { d: "M5 -21 C6 -15 13 -14 11 -6 C10.5 -10 8 -12.5 5 -13 Z" }, h);
+}
+function noteBeam(g, x, y, s) {
+  const h = el("g", { transform: `translate(${x} ${y}) scale(${s}) rotate(-8)` }, g);
+  el("ellipse", { cx: 0, cy: 0, rx: 5.2, ry: 3.8, transform: "rotate(-22)" }, h);
+  el("ellipse", { cx: 16, cy: -3, rx: 5.2, ry: 3.8, transform: "rotate(-22 16 -3)" }, h);
+  el("rect", { x: 3.4, y: -22, width: 1.7, height: 22 }, h);
+  el("rect", { x: 19.4, y: -25, width: 1.7, height: 22 }, h);
+  el("path", { d: "M3.4 -22 L21.1 -25 L21.1 -20.5 L3.4 -17.5 Z" }, h);
+}
+const notes = document.getElementById("notes");
+noteBeam(notes, 384, 500, 1.0);
+note8(notes, 420, 462, 0.78);
+note8(notes, 368, 458, 0.55);
+
+const motes = document.getElementById("motes");
+let seed = 11;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+for (let i = 0; i < 34; i++) {
+  const x = 30 + rnd() * 420, y = 40 + rnd() * 300;
+  const inBeam = Math.abs(x - 240) < 30 + (y / 690) * 150;
+  el("circle", { cx: x.toFixed(1), cy: y.toFixed(1), r: (0.4 + rnd() * 0.7).toFixed(2),
+                 opacity: ((inBeam ? 0.35 : 0.12) + rnd() * 0.25).toFixed(2) }, motes);
+}
+for (let i = 0; i < 26; i++) {
+  const a = rnd() * Math.PI * 2, r = 120 + rnd() * 130;
+  const x = 240 + Math.cos(a) * r * 1.05, y = 552 + Math.sin(a) * r * 0.75;
+  if (y > 670 || y < 380) continue;
+  el("circle", { cx: x.toFixed(1), cy: y.toFixed(1), r: (0.5 + rnd() * 0.9).toFixed(2), opacity: (0.25 + rnd() * 0.6).toFixed(2) }, motes);
+}
+
+document.fonts.ready.then(() => requestAnimationFrame(() => requestAnimationFrame(() => { window.__done = true; })));
+</script>
+</body>
+</html>

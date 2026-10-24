@@ -1,0 +1,3 @@
+0x00000000	mtk_wcn_wmt_co_clock_flag_get	mtk_stp_wmt_soc	EXPORT_SYMBOL
+0x00000000	mtk_wcn_wmt_wlan_reg	mtk_stp_wmt_soc	EXPORT_SYMBOL
+0x00000000	mtk_wcn_wmt_wlan_unreg	mtk_stp_wmt_soc	EXPORT_SYMBOL

@@ -1,0 +1,33 @@
+{
+  "screenController": {
+    "_class": "dmpapp::ScreenTransitionController",
+    "windowWidth": 480,
+    "windowHeight": 800,
+    "width": 480,
+    "height": 700,
+    "x": 0,
+    "y": 44,
+    "screenID": "Preview",
+    "windowID": "PreviewWindow",
+    "upperController": {"screenID": "", "windowID": ""},
+    "lowerController": {"screenID": "", "windowID": ""},
+    "leftController": {"screenID": "", "windowID": ""},
+    "rightController": {"screenID": "", "windowID": ""},
+    "windowController": {"screenID": "", "windowID": ""},
+    "properties": {},
+    "windowProperties": {},
+    "popupProperties": {}
+  },
+  "appFont": {
+    "_class": "dmpapp::Font",
+    "fontFamily": "SST",
+    "emptyString": "",
+    "language_name": "en"
+  },
+  "dialogManager": {
+    "_class": "DialogManager"
+  },
+  "holdToastManager": {
+    "_class": "dmpapp::HoldToastManager"
+  }
+}

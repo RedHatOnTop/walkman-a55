@@ -1,0 +1,12 @@
+--- a/components/VolumeArea.qml
++++ b/components/VolumeArea.qml
+@@ -67,7 +67,8 @@
+         Rectangle{
+             width: 480
+             height: 54
+-            color: viewstyle.bgcolor.D1
++            // wmmod: let the tinted backdrop through
++            color: (viewstyle.wm && viewstyle.wm.tint) ? "transparent" : viewstyle.bgcolor.D1
+ 
+             // ボリュームスライダー
+             VolumeBar {

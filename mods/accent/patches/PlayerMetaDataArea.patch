@@ -1,0 +1,16 @@
+--- a/PlayerMetaDataArea.qml
++++ b/PlayerMetaDataArea.qml
+@@ -42,11 +42,11 @@
+         property int labelAlbumWidth : 372
+         property int labelAlbumHeight: 37
+         property int scrubBarTopMargin: 6
+-        property int pixelSizeTitle: 34
++        property int pixelSizeTitle: 40
+         property int pixelSizeL: viewstyle.textsize.L
+         property int fontLight: Font.Light
+         property int fontRegular: Font.Normal
+-        property color fontColorL1: viewstyle.textcolor.L1
++        property color fontColorL1: viewstyle.textcolor.E1
+         property color fontColorL2: viewstyle.textcolor.L2
+         property color fontColorL3: viewstyle.textcolor.L3
+     }

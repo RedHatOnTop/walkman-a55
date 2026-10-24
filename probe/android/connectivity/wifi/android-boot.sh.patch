@@ -1,0 +1,163 @@
+--- a/probe/android/android-boot.sh	2026-10-15 19:40:20.143172291 +0900
++++ b/probe/android/android-boot.sh	2026-10-15 19:41:04.695723157 +0900
+@@ -10,6 +10,8 @@
+ #   sh android-boot.sh status      list the container's processes
+ #   sh android-boot.sh sh CMD      run CMD inside the container
+ #   sh android-boot.sh log         show the container's kernel log lines
++#   sh android-boot.sh wifi        Wi-Fi modules / node / netdev state (host + container)
++#   sh android-boot.sh wifi-unload host side Wi-Fi teardown, after down
+ #   sh android-boot.sh down        kill the container and unmount everything
+ #
+ # Expects /tmp/container.tgz, /tmp/mali_r4p0.ko and, for up, the two images in
+@@ -26,6 +28,7 @@
+ C=/tmp/c
+ SYSIMG=wmmod-android/fire-system.img
+ DATAIMG=wmmod-android/android-data.img
++WIFIKO=/tmp/wifi
+ 
+ say() { echo "== $*"; }
+ die() { echo "!! $*"; exit 1; }
+@@ -101,6 +104,78 @@
+     echo "mali dev $($BB cat /sys/class/misc/mali/dev)"
+ }
+ 
++# Wi-Fi, host side. The stock kernel has no cfg80211 and no WLAN driver, so the
++# four RAM-only modules of the proven WIFITEST bundle (docs/wifi-test.md) are
++# loaded here, in the bundle's insmod order, BEFORE start_init. That ordering is
++# load-bearing: mtk_wmt_wifi_soc creates the class device wmtWifi
++# (WMT_CREATE_NODE_DYNAMIC=1), and the container's ueventd makes /dev/wmtWifi
++# (0660 system system, from ueventd.icx.rc) only while it runs its coldboot at
++# early-init. A module loaded later leaves the container without the node.
++# mac80211_bp is not loaded: wlan_mt_bp does not depend on it.
++# Nothing here powers the radio. The container's init writes 1 to /dev/wmtWifi
++# when the framework sets wlan.driver.status=ok (init.aosp.rc), which is what
++# creates wlan0. Non-fatal: up() carries on without Wi-Fi when this fails.
++wifi_loaded() { $BB grep -q "^$1 " /proc/modules; }
++
++wifi_modules()
++{
++    say "wifi kernel modules (host side)"
++    [ -f $WIFIKO/mtk_wmt_wifi_soc.ko ] || { echo "no $WIFIKO/*.ko pushed"; return 1; }
++    wifi_loaded mtk_stp_wmt_soc || { echo "mtk_stp_wmt_soc (Sony WMT core) is not loaded"; return 1; }
++    [ -r /etc/firmware/WIFI_RAM_CODE_8590 ] || { echo "no /etc/firmware/WIFI_RAM_CODE_8590 on the host"; return 1; }
++    for ko in mtk_wmt_wifi_soc compat_bp cfg80211_bp wlan_mt_bp; do
++        m="${ko%_bp}"
++        if wifi_loaded "$m"; then
++            echo "already loaded: $m"
++            continue
++        fi
++        insmod $WIFIKO/$ko.ko || { echo "insmod $ko failed"; return 1; }
++        echo "loaded: $m"
++    done
++    [ -e /sys/class/wmtWifi/wmtWifi/dev ] || { echo "no /sys/class/wmtWifi/wmtWifi/dev"; return 1; }
++    echo "wmtWifi dev $($BB cat /sys/class/wmtWifi/wmtWifi/dev)"
++    echo "WMT launcher state (kept by the Sony side):"
++    $BB ps | $BB grep -E '[6]620_launcher|[w]mt_loader|[m]tkbt' || echo "  none of 6620_launcher*, wmt_loader, mtkbt is running"
++}
++
++wifi_status()
++{
++    say "wifi modules"
++    $BB grep -E '^(mtk_stp_wmt_soc|mtk_wmt_wifi_soc|compat|cfg80211|wlan_mt) ' /proc/modules
++    say "wifi char device"
++    $BB awk '$2 ~ /WIFI/' /proc/devices
++    echo "class dev: $($BB cat /sys/class/wmtWifi/wmtWifi/dev 2>/dev/null)"
++    say "host view"
++    $BB ls -l /dev/wmtWifi 2>&1
++    if [ -e /sys/class/net/wlan0 ]; then
++        echo "wlan0 present, address $($BB cat /sys/class/net/wlan0/address)"
++    else
++        echo "no wlan0 (radio is off, or modules are not loaded)"
++    fi
++    pid="$(container_init_pid)"
++    if [ -n "$pid" ]; then
++        say "container view (init pid $pid)"
++        $BB ls -l /proc/$pid/root/dev/wmtWifi 2>&1
++        echo "net ns host: $($BB readlink /proc/1/ns/net)"
++        echo "net ns init: $($BB readlink /proc/$pid/ns/net)"
++    fi
++}
++
++# Host side teardown for after down. Powers the radio off first, then removes the
++# modules in reverse dependency order (the order of the bundle's wifi_unload.sh).
++wifi_unload()
++{
++    say "wifi teardown (host side)"
++    [ -z "$(container_pids)" ] || die "the container is still up; run down first"
++    [ -c /dev/wmtWifi ] && echo 0 > /dev/wmtWifi
++    $BB sleep 1
++    for m in wlan_mt cfg80211 compat mtk_wmt_wifi_soc; do
++        if wifi_loaded "$m"; then
++            rmmod "$m" && echo "rmmod $m ok" || echo "rmmod $m FAILED"
++        fi
++    done
++}
++
+ container()
+ {
+     say "build the container root"
+@@ -209,6 +284,28 @@
+         $BB mount -o bind /tmp/idc-overlay $ROOT/system/usr/idc || die "idc overlay bind failed"
+         echo "idc overlay: $($BB ls /tmp/idc-overlay | $BB tr '\n' ' ')"
+     fi
++
++    # Wi-Fi Direct is hidden from the framework. The proven wlan_mt build lists
++    # only IBSS and managed interface modes (docs/wifi-test.md run log, iw phy)
++    # and has no p2p0, so FEATURE_WIFI_DIRECT would make WifiStateMachine start
++    # the p2p_supplicant service. The same overlay trick as for the idc files:
++    # a copy of /system/etc/permissions minus android.hardware.wifi.direct.xml,
++    # bound over the read-only original.
++    perm_src=/tmp/perm-overlay
++    perm_dst="$ROOT/system/etc/permissions"
++    if [ -d "$perm_dst" ]; then
++        $BB rm -rf $perm_src
++        $BB mkdir -p $perm_src || die "could not create $perm_src"
++        for f in "$perm_dst"/*; do
++            [ "${f##*/}" = "android.hardware.wifi.direct.xml" ] && continue
++            $BB cp "$f" $perm_src/
++        done
++        $BB chmod 755 $perm_src
++        $BB chmod 644 $perm_src/*
++        $BB mount -o bind $perm_src "$perm_dst" || die "permissions overlay bind failed"
++        $BB mount -o remount,bind,ro "$perm_dst" || die "could not remount permissions overlay read-only"
++        echo "permissions overlay: wifi.direct hidden ($($BB ls $perm_src | $BB wc -l) files)"
++    fi
+     $BB mkdir -p $VOL
+     $BB mount -o loop,rw -t ext4 "$C/$DATAIMG" $VOL || die "data loop mount failed"
+     $BB mkdir -p $VOL/data $VOL/cache
+@@ -315,6 +412,7 @@
+     prepare
+     zram
+     swap
++    wifi_modules || echo "Wi-Fi: modules not loaded, continuing without Wi-Fi"
+     container
+     say "start Android init"
+     start_init > $ROOT/init.out 2>&1 &
+@@ -356,13 +454,15 @@
+     for p in $(container_pids); do kill -9 "$p" 2>/dev/null; done
+     # The container root is bind mounted onto itself and init stacks its own
+     # mounts on top, so peel the stack rather than assuming one level. The
+-    # masked audio HAL, the ui sound bind, and the idc overlay sit on top of
++    # masked audio HAL, the ui sound bind, the idc overlay and the permissions
++    # overlay sit on top of
+     # $ROOT/system and have to come off before the system loop mount can be
+     # released. The ui bind is first so it is gone before $ROOT/system.
+     for i in 1 2 3 4 5; do
+         $BB umount "$ROOT/system/media/audio/ui" 2>/dev/null
+         $BB umount "$ROOT/system/lib/hw/audio.primary.mt8127.so" 2>/dev/null
+         $BB umount "$ROOT/system/usr/idc" 2>/dev/null
++        $BB umount "$ROOT/system/etc/permissions" 2>/dev/null
+         $BB umount $ROOT/dev/pts $ROOT/dev $ROOT/proc $ROOT/sys \
+             $ROOT/data $ROOT/cache $ROOT/system $ROOT $VOL 2>/dev/null
+     done
+@@ -392,7 +492,9 @@
+ up) up ;;
+ status) status ;;
+ log) log ;;
++wifi) wifi_status ;;
++wifi-unload) wifi_unload ;;
+ down) down ;;
+ sh) shift; sh_in "$*" ;;
+-*) die "usage: android-boot.sh prepare | up | status | sh CMD | log | down" ;;
++*) die "usage: android-boot.sh prepare | up | status | sh CMD | log | wifi | wifi-unload | down" ;;
+ esac

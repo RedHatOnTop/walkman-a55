@@ -1,0 +1,11 @@
+--- a/components/EdgeDetectListView.qml
++++ b/components/EdgeDetectListView.qml
+@@ -464,7 +464,7 @@
+    */
+   signal modelChangedOrReset()
+   onModelChanged: modelChangedOrReset()
+-  onModelReset: modelChangedOrReset()
++  // uisim: Sony's Qt 5.3 adds QQuickItemView::modelReset(); host Qt lacks it.
+   onAtYBeginningChanged:
+   {
+     p.is_at_y_beginning = atYBeginning

@@ -1,0 +1,46 @@
+diff -ruN a/nic/nic_pwr_mgt.c b/nic/nic_pwr_mgt.c
+--- a/drivers/net/wireless/mt_soc/conn_soc/mt_wifi/wlan/nic/nic_pwr_mgt.c	2026-10-11 01:32:57.115748334 +0000
++++ b/drivers/net/wireless/mt_soc/conn_soc/mt_wifi/wlan/nic/nic_pwr_mgt.c	2026-10-11 01:32:57.118578638 +0000
+@@ -390,7 +390,7 @@
+ 				for(u4FwCnt=0; u4FwCnt<16; u4FwCnt++)
+ 					printk("0x%08x ", CONSYS_REG_READ(CONSYS_CPUPCR_REG));
+ #if CFG_ENABLE_DRIVER_OWN_FAIL_RESET
+-				mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 40);
++				mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 40, CHIP_TYPE_SOC);
+ #endif
+             }
+             break;
+diff -ruN a/os/linux/include/gl_os.h b/os/linux/include/gl_os.h
+--- a/drivers/net/wireless/mt_soc/conn_soc/mt_wifi/wlan/os/linux/include/gl_os.h	2026-10-11 01:32:57.114871186 +0000
++++ b/drivers/net/wireless/mt_soc/conn_soc/mt_wifi/wlan/os/linux/include/gl_os.h	2026-10-11 01:32:57.117633173 +0000
+@@ -623,6 +623,17 @@
+ #include "wlan_lib.h"
+ #include "wlan_oid.h"
+ 
++/* A55 port: stock kernel is built without CONFIG_WIRELESS_EXT, so the WEXT core
++ * (and its exported wireless_send_event) does not exist. cfg80211/nl80211 events
++ * are unaffected; legacy WEXT events are simply dropped, which is exactly what a
++ * WEXT-less kernel would do. */
++#ifndef CONFIG_WIRELESS_EXT
++#include <net/iw_handler.h>
++#undef wireless_send_event
++#define wireless_send_event(dev, cmd, wrqu, extra) \
++	do { (void)(dev); (void)(cmd); (void)(wrqu); (void)(extra); } while (0)
++#endif
++
+ #if CFG_ENABLE_AEE_MSG
+ #include <linux/aee.h>
+ #endif
+diff -ruN a/os/linux/include/gl_rst.h b/os/linux/include/gl_rst.h
+--- a/drivers/net/wireless/mt_soc/conn_soc/mt_wifi/wlan/os/linux/include/gl_rst.h	2026-10-11 01:32:57.113996117 +0000
++++ b/drivers/net/wireless/mt_soc/conn_soc/mt_wifi/wlan/os/linux/include/gl_rst.h	2026-10-11 01:32:57.116682280 +0000
+@@ -116,7 +116,8 @@
+ } ENUM_WIFI_NETLINK_GRP_T, *P_ENUM_WIFI_NETLINK_GRP_T;
+ 
+ #if CFG_ENABLE_DRIVER_OWN_FAIL_RESET
+-extern MTK_WCN_BOOL mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason);
++/* A55 port: kernel common_detect exports the 3-arg dispatcher (type, reason, chipType) */
++extern MTK_WCN_BOOL mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason, CHIP_TYPE_F chipType);
+ #endif
+ 
+ /*******************************************************************************

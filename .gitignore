@@ -1,0 +1,14 @@
+# Firmware, extracted images and third-party trees stay out of git.
+/nwa50-extracted/
+/nwa50-extracted.tar.zst
+/system-rootfs/
+/oss/
+/rockbox/
+/wampy/
+/work/
+/.venv/
+/probe/out/
+/probe/audiohal/out/
+__pycache__/
+# What the wallpaper generators draw; only the scripts are tracked.
+/probe/wallpaper/*.jpg

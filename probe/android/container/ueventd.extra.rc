@@ -1,0 +1,12 @@
+# Extra ueventd rules for the NW-A55 Android container.
+#
+# Appended to the MT8127 rules from the FireOS ramdisk. Sony's own /dev is more
+# restrictive than Android's: ion and the MTK display nodes are root-only
+# (0600), so SurfaceFlinger, which init starts as "system", cannot open them.
+# Android's ueventd.rc normally carries these permissions.
+
+/dev/ion                  0666   root       root
+/dev/sw_sync              0666   root       root
+/dev/mtk_disp             0660   system     graphics
+/dev/mtk_ovl              0660   system     graphics
+/dev/mtkfb_vsync          0660   system     graphics

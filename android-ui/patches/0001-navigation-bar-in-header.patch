@@ -1,0 +1,310 @@
+--- a/components/NavigationBar.qml
++++ b/components/NavigationBar.qml
+@@ -12,10 +12,21 @@
+ {
+     id: navigationBar
+ 
+-    color: "black"
++    color: "transparent"
++
++    // The Android build moves this bar off the bottom edge, where Android's
++    // own navigation bar sits. Windows lay its buttons into the A55 header's
++    // info row ("header"): Now Playing, Library and Option, in this bar's
++    // order, at the row's right end where the A55 shows its battery, which
++    // Android's status bar shows instead. Back goes to Android's back key,
++    // which reaches the topmost bar through backKey. Anywhere else (popups)
++    // it collapses.
++    property string placement: "hidden"
++    readonly property bool shown: placement === "header"
+ 
+     width: parent.width
+-    height: 40
++    height: shown ? 40 : 0
++    z: 1
+ 
+     signal back()
+     signal play()
+@@ -32,12 +43,16 @@
+ 
+     MouseArea {
+         anchors.fill: parent
++        // Left of the buttons the header's info row stays tappable; a tap on
++        // a disabled button stops here instead of opening the volume popup.
++        anchors.leftMargin: navigationBar.shown ? parent.width - 166 : 0
+     }
+ 
+     StateButton {
+       id: backButton
+       x: 0
+-      width: parent.width / 4; height: parent.height
++      width: 0; height: parent.height
++      opacity: 0
+ 
+       objectName: "BackButton"
+ 
+@@ -48,8 +63,10 @@
+       }
+     }
+     StateButton {
+-      x: 120
+-      width: parent.width / 4; height: parent.height
++      x: parent.width - 166
++      width: 57; height: parent.height
++      clip: true
++      opacity: navigationBar.shown ? 1 : 0
+ 
+       objectName: "NowPlayingButton"
+ 
+@@ -60,8 +77,10 @@
+       }
+     }
+     StateButton {
+-      x: 240
+-      width: parent.width / 4; height: parent.height
++      x: parent.width - 109
++      width: 57; height: parent.height
++      clip: true
++      opacity: navigationBar.shown ? 1 : 0
+ 
+       objectName: "FunctionTopButton"
+ 
+@@ -72,8 +91,10 @@
+       }
+     }
+     StateButton {
+-      x: 360
+-      width: parent.width / 4; height: parent.height
++      x: parent.width - width
++      width: 52; height: parent.height
++      clip: true
++      opacity: navigationBar.shown ? 1 : 0
+ 
+       objectName: "OptionButton"
+ 
+@@ -108,6 +129,9 @@
+         }
+     }
+ 
++    Component.onCompleted: backKey.add(navigationBar)
++    Component.onDestruction: backKey.remove(navigationBar)
++
+     DialogWrapper {
+         id: dialog
+         visible: false
+--- a/components/HeaderArea.qml
++++ b/components/HeaderArea.qml
+@@ -74,6 +74,9 @@
+     StatusBar{
+         id:status
+         anchors.top:voluemeArea.bottom
++        // The A55's info row, as tall as the stock navigation bar whose
++        // buttons it also holds.
++        height: 40
+         stateIconList: header.properties["stateIconList"]
+         isEnableStatusBarMouseArea: header.properties["isEnableStatusBarMouseArea"]
+         Connections {
+--- a/window/PlayerWindow.qml
++++ b/window/PlayerWindow.qml
+@@ -47,7 +47,7 @@
+ 
+       anchors.bottom: parent.bottom
+       width: parent.width
+-      height: ((operation.visible && operation.opacity === 1.0) ? operation.height : 0) + ((footer.visible && footer.opacity === 1.0) ? footer.height : 0)
++      height: ((operation.visible && operation.opacity === 1.0) ? operation.height : 0)
+     }
+ 
+     PageIndicator {
+@@ -58,7 +58,7 @@
+ 
+     BasicPlayerControls { // 120
+         id: operation
+-        anchors.bottom: footer.top
++        anchors.bottom: parent.bottom
+         properties: playerWindow.basicPlayerControls
+ 
+         onHeightChanged: {
+@@ -67,7 +67,8 @@
+     }
+     NavigationBar { // 56
+         id: footer
+-        anchors.bottom: parent.bottom
++        anchors.top: header.top
++        placement: "header"
+         properties: playerWindow.navigationBar
+     }
+ 
+--- a/window/BasicWindow.qml
++++ b/window/BasicWindow.qml
+@@ -20,7 +20,8 @@
+ 
+     NavigationBar { // 56
+         id: footer
+-        anchors.bottom: parent.bottom
++        anchors.top: header.top
++        placement: "header"
+         properties: basicWindow.navigationBar
+     }
+ }
+--- a/window/SettingWindow.qml
++++ b/window/SettingWindow.qml
+@@ -21,7 +21,8 @@
+ 
+     NavigationBar { // 56
+         id: footer
+-        anchors.bottom: parent.bottom
++        anchors.top: header.top
++        placement: "header"
+         properties: basicWindow.navigationBar
+     }
+ }
+--- a/window/MSCWindow.qml
++++ b/window/MSCWindow.qml
+@@ -21,7 +21,8 @@
+ 
+     NavigationBar { // 56
+         id: footer
+-        anchors.bottom: parent.bottom
++        anchors.top: header.top
++        placement: "header"
+         properties: basicWindow.navigationBar
+     }
+ }
+--- a/window/InitialSettingWizardWindow.qml
++++ b/window/InitialSettingWizardWindow.qml
+@@ -18,7 +18,8 @@
+ 
+     NavigationBar { // 56
+         id: footer
+-        anchors.bottom: parent.bottom
++        anchors.top: header.top
++        placement: "header"
+         properties: basicWindow.navigationBar
+     }
+ }
+--- a/window/UsbDacDeviceWindow.qml
++++ b/window/UsbDacDeviceWindow.qml
+@@ -42,18 +42,19 @@
+ 
+     anchors.bottom: parent.bottom
+     width: parent.width
+-    height: (footer.visible && footer.opacity === 1.0) ? footer.height : 0
++    height: 0
+   }
+ 
+   PageIndicator {
+     id: pageindicator
+-    anchors { bottom: footer.top; bottomMargin: 10; horizontalCenter: parent.horizontalCenter; }
++    anchors { bottom: parent.bottom; bottomMargin: 10; horizontalCenter: parent.horizontalCenter; }
+     properties: usbDacDeviceWindow.pageIndicator
+   }
+ 
+   NavigationBar { // 56
+     id: footer
+-    anchors.bottom: parent.bottom
++    anchors.top: header.top
++    placement: "header"
+     properties: usbDacDeviceWindow.navigationBar
+   }
+ 
+--- a/window/PlayerWindowForSimpleMode.qml
++++ b/window/PlayerWindowForSimpleMode.qml
+@@ -104,7 +104,7 @@
+   {
+     id: page_indicator
+ 
+-    anchors { bottom: footer.top; bottomMargin: 10; horizontalCenter: parent.horizontalCenter; }
++    anchors { bottom: parent.bottom; bottomMargin: 10; horizontalCenter: parent.horizontalCenter; }
+     properties: player_window.pageIndicator
+   }
+ 
+@@ -119,8 +119,8 @@
+   NavigationBar
+   {
+     id: footer
+-
+-    anchors.bottom: parent.bottom
++    anchors.top: header.top
++    placement: "header"
+     properties: player_window.navigationBar
+     enabled: !footer_blind.is_bliding
+   }
+--- a/framework/MusicPlayerTopWindow.qml
++++ b/framework/MusicPlayerTopWindow.qml
+@@ -21,12 +21,13 @@
+ 
+     OperationArea { // 120
+         id: operation
+-        anchors.bottom: footer.top
++        anchors.bottom: parent.bottom
+     }
+ 
+     NavigationBar { // 56
+         id: footer
+-        anchors.bottom: parent.bottom
++        anchors.top: header.top
++        placement: "header"
+ 
+         properties: navigationBar
+     }
+--- a/framework/Dialog.qml
++++ b/framework/Dialog.qml
+@@ -244,8 +244,7 @@
+         visible: parent.state == "NoneDialog" ? false : true
+         width: parent.width
+         height: parent.height
+-        anchors.bottomMargin: parent.state === "OptionMenu"? 56 : 0
+-        color: "black"
++                color: "black"
+         opacity: 0.8
+ 
+         MouseArea {
+@@ -272,7 +271,8 @@
+ 
+     NavigationBar { // 56
+         id: footer_for_dialog
+-        anchors.bottom: parent.bottom
++        y: screenController.navigationY
++        placement: "header"
+ 
+         visible: (grayout.visible === true) ? true : false
+ 
+--- a/components/menu/OptionMenu.qml
++++ b/components/menu/OptionMenu.qml
+@@ -54,7 +54,7 @@
+ 
+     Rectangle {
+         id: opacityArea
+-        anchors { fill: parent; bottomMargin: p.bottomSpace; }  // NavigationBarの高さ分考慮
++        anchors { fill: parent; topMargin: screenController.y; }
+         opacity: 0.0
+         MouseArea {
+             anchors.fill: parent
+@@ -70,15 +70,15 @@
+         height: levelOneMenu.height
+         width: levelOneMenu.width
+         anchors {
+-            bottom: base.bottom; right: base.right;
+-            bottomMargin: p.menuBottomSpace; rightMargin: p.menu_right_margin;
++            top: base.top; right: base.right;
++            topMargin: screenController.y + p.menuTopSpace; rightMargin: p.menu_right_margin;
+         }
+         clip: true
+         OptionMenuList {
+             id: levelOneMenu
+             x: 0
+             height: (p.visibleAreaCellCount < tempModel.count )? p.menu_max_height : (levelOneMenu.cell_height * tempModel.count) + (p.menu_separator_height * (tempModel.count - 1)) + p.menu_vertical_margin
+-            anchors { bottom: parent.bottom; right: parent.right; }
++            anchors { top: parent.top; right: parent.right; }
+             model: tempModel
+             visible_area_cell_count: p.visibleAreaCellCount
+             onClicked: {
+@@ -91,8 +91,7 @@
+     QtObject {
+         id: p
+         property int visibleAreaCellCount: 6
+-        property int bottomSpace: 56
+-        property int menuBottomSpace: 90
++        property int menuTopSpace: 8
+          property int menu_right_margin: 24
+         property int menu_vertical_margin: 5 * 2
+         property int menu_separator_height: 1

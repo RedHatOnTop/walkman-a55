@@ -1,0 +1,7 @@
+Android 5.1.1 (android-5.1.1_r38) headers for the audio effect library ABI, unmodified:
+
+    hardware/audio_effect.h  platform/hardware/libhardware  include/hardware/audio_effect.h
+    system/audio.h           platform/system/core           include/system/audio.h
+    cutils/bitops.h          platform/system/core           include/cutils/bitops.h
+
+Apache License 2.0, as stated in each file.

@@ -1,0 +1,141 @@
+--- a/sid_0936_library/LibraryTopHelpGuide.qml
++++ b/sid_0936_library/LibraryTopHelpGuide.qml
+@@ -2,7 +2,7 @@
+ // Copyright 2015-2018 Sony Corporation
+ //
+ 
+-import QtQuick 2.3
++import QtQuick 2.15
+ import "qrc:/parts"
+ import "qrc:/components"
+ import "qrc:/framework"
+@@ -28,20 +28,79 @@
+         onBack: closeLibraryTopHelpGuidePopup()
+     }
+ 
++    // The Android build has the Option button at the right end of the header
++    // and no function icon row, so the stock picture is cut into full-width bands
++    // that are stacked where those parts are now. The bands are rows of the
++    // 480x772 picture, which was drawn for a screen 28 px down.
++    QtObject {
++        id: p
++        readonly property color dim: Qt.rgba(0, 0, 0, 178 / 255)
++        readonly property int pictureWidth: 480
++        readonly property int ringTop: 704
++        readonly property int ringHeight: 68
++        readonly property real ringCenterX: 419.5
++        readonly property int leaderHeight: 24
++        readonly property int frameTop: 198
++        readonly property int frameHeight: 134
++        // The frame sits 4 px inside the second row's first icon image (88 px
++        // tall). The rows are where sid_0901_library/Contents.qml (0007) puts
++        // them, repeated here: with no function icon row the icon pages take
++        // the screen area's spare height, each row up to 26 px taller with its
++        // image half of that lower, and the top margin takes the rest.
++        readonly property int spare: screenController.height - (6 + 400 + 31 + 20 + 10)
++        readonly property int touchExtension:
++            Math.max(0, Math.min(26, Math.floor(spare * 26 / (24 + 504 - 6 - 400))))
++        readonly property int pagesTop: Math.max(6, Math.min(24, 6 + spare - 4 * touchExtension))
++        readonly property int frameY: screenController.y + pagesTop + 100 + touchExtension
++                                      + Math.floor(touchExtension / 2) + 4
++        readonly property real optionCenterX: base.width - 26
++        readonly property real ringY: Math.round(screenController.navigationY + 20 - p.ringHeight / 2)
++        readonly property real shift: Math.round(p.optionCenterX - p.ringCenterX)
++    }
++
+     Item {
+         id: screen
+-        x: screenController.x
+-        y: (library_helpguide_info["helpguide_available_hp_amp"]) ? 0: screenController.y
+-        width: parent.width
+-        height: parent.height - y
++        anchors.fill: parent
+ 
+         MouseArea {
+             anchors.fill: parent
+         }
+ 
++        Rectangle {
++            width: parent.width; height: p.ringY
++            color: p.dim
++        }
++        Rectangle {
++            y: p.ringY
++            width: p.shift; height: p.ringHeight + p.leaderHeight
++            color: p.dim
++        }
++        Image {
++            x: p.shift; y: p.ringY
++            source: library_helpguide_info["helpguide_file"]
++            sourceClipRect: Qt.rect(0, p.ringTop, p.pictureWidth, p.ringHeight)
++        }
+         Image {
++            id: leader
++            x: p.shift; y: p.ringY + p.ringHeight
+             source: library_helpguide_info["helpguide_file"]
+-            opacity: 1.0
++            sourceClipRect: Qt.rect(0, p.ringTop - p.leaderHeight, p.pictureWidth, p.leaderHeight)
++        }
++        Rectangle {
++            y: leader.y + leader.height
++            width: parent.width; height: p.frameY - y
++            color: p.dim
++        }
++        Image {
++            id: frame
++            y: p.frameY
++            source: library_helpguide_info["helpguide_file"]
++            sourceClipRect: Qt.rect(0, p.frameTop, p.pictureWidth, p.frameHeight)
++        }
++        Rectangle {
++            y: frame.y + frame.height
++            width: parent.width; height: parent.height - y
++            color: p.dim
+         }
+ 
+         SCmnLabel {
+@@ -49,7 +108,7 @@
+             y: 53
+             height: 60
+             width: 320
+-            visible: library_helpguide_info["helpguide_available_hp_amp"]
++            visible: false
+             color: viewstyle.textcolor.E1
+             font.pixelSize: viewstyle.textsize.S
+             font.weight: Font.Normal
+@@ -61,7 +120,7 @@
+ 
+         SCmnLabel {
+             x: 140
+-            y: library_helpguide_info["helpguide_func_icon_label_position_y"]
++            y: 0
+             height: 90
+             width: 320
+             visible: library_helpguide_info["helpguide_available_function_icon"]
+@@ -76,7 +135,7 @@
+ 
+         SCmnLabel {
+             x: 20
+-            y: library_helpguide_info["helpguide_library_icon_label_position_y"]
++            y: frame.y + frame.height + 4
+             height: 90
+             width: 320
+             color: viewstyle.textcolor.E1
+@@ -89,14 +148,14 @@
+         }
+ 
+         SCmnLabel {
+-            x: 140
+-            y: library_helpguide_info["helpguide_option_menu_label_position_y"]
++            x: Math.min(p.optionCenterX + 40, base.width - 8) - width
++            y: leader.y + leader.height + 4
+             height: 90
+             width: 320
+             color: viewstyle.textcolor.E1
+             font.pixelSize: viewstyle.textsize.S
+             font.weight: Font.Normal
+-            verticalAlignment: Text.AlignBottom
++            verticalAlignment: Text.AlignTop
+             horizontalAlignment: Text.AlignRight
+             text: qsTr("000127") + viewstyle.empty_string // カスタマイズやWalkmanの全ての「設定」ができます
+             wrapMode: Text.WordWrap

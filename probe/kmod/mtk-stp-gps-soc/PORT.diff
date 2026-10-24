@@ -1,0 +1,109 @@
+--- a/drivers/misc/mediatek/conn_soc/common/linux/pub/stp_chrdev_gps.c	2026-10-15 19:37:40.489688870 +0900
++++ b/stp_chrdev_gps_soc.c	2026-10-15 19:37:40.503227890 +0900
+@@ -11,6 +11,17 @@
+ * You should have received a copy of the GNU General Public License along with this program.
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
++/*
++ * NW-A55 port notes (not part of the MediaTek original):
++ *
++ * Taken from Sony's GPL tree linux-kernel-3.10.26,
++ * drivers/misc/mediatek/conn_soc/common/linux/pub/stp_chrdev_gps.c, which still
++ * calls the pre-abstraction combo-chip API. The stock kernel exports the
++ * chip-type dispatchers instead (the BT and Wi-Fi chardevs of this tree already
++ * pass CHIP_TYPE_SOC), so every mtk_wcn_stp_* / mtk_wcn_wmt_* call below gains
++ * a CHIP_TYPE_SOC argument and the driver name gets the _soc suffix. Nothing
++ * else is changed. See PORT.diff for the exact delta.
++ */
+ /** $Log: stp_chrdev_gps.c $
+  *
+  * 12 13 2010 Sean.Wang
+@@ -37,7 +48,7 @@
+ 
+ MODULE_LICENSE("GPL");
+ 
+-#define GPS_DRIVER_NAME "mtk_stp_GPS_chrdev"
++#define GPS_DRIVER_NAME "mtk_stp_GPS_chrdev_soc"
+ #define GPS_DEV_MAJOR 191 // never used number
+ #define GPS_DEBUG_TRACE_GPIO         0
+ #define GPS_DEBUG_DUMP               0
+@@ -116,7 +127,7 @@
+ #if GPS_DEBUG_TRACE_GPIO        
+         mtk_wcn_stp_debug_gpio_assert(IDX_GPS_TX, DBG_TIE_LOW);
+ #endif
+-        written = mtk_wcn_stp_send_data(&o_buf[0], copy_size, GPS_TASK_INDX);
++        written = mtk_wcn_stp_send_data(&o_buf[0], copy_size, GPS_TASK_INDX, CHIP_TYPE_SOC);
+ #if GPS_DEBUG_TRACE_GPIO
+         mtk_wcn_stp_debug_gpio_assert(IDX_GPS_TX, DBG_TIE_HIGH);
+ #endif
+@@ -178,7 +189,7 @@
+ #if GPS_DEBUG_TRACE_GPIO    
+     mtk_wcn_stp_debug_gpio_assert(IDX_GPS_RX, DBG_TIE_LOW);
+ #endif
+-    retval = mtk_wcn_stp_receive_data(i_buf, count, GPS_TASK_INDX);
++    retval = mtk_wcn_stp_receive_data(i_buf, count, GPS_TASK_INDX, CHIP_TYPE_SOC);
+ #if GPS_DEBUG_TRACE_GPIO
+     mtk_wcn_stp_debug_gpio_assert(IDX_GPS_RX, DBG_TIE_HIGH);
+ #endif
+@@ -193,7 +204,7 @@
+         mtk_wcn_stp_debug_gpio_assert(IDX_GPS_RX, DBG_TIE_LOW);
+ #endif
+ 
+-        retval = mtk_wcn_stp_receive_data(i_buf, count, GPS_TASK_INDX);
++        retval = mtk_wcn_stp_receive_data(i_buf, count, GPS_TASK_INDX, CHIP_TYPE_SOC);
+ 
+ #if GPS_DEBUG_TRACE_GPIO
+         mtk_wcn_stp_debug_gpio_assert(IDX_GPS_RX, DBG_TIE_HIGH);
+@@ -271,7 +282,7 @@
+ 
+         case COMBO_IOC_GPS_HWVER:             
+             /*get combo hw version*/            
+-            hw_ver_sym = mtk_wcn_wmt_hwver_get();
++            hw_ver_sym = mtk_wcn_wmt_hwver_get(CHIP_TYPE_SOC);
+ 
+             GPS_INFO_FUNC(KERN_INFO "GPS_ioctl(): get hw version = %d, sizeof(hw_ver_sym) = %d\n", hw_ver_sym, sizeof(hw_ver_sym));
+             if(copy_to_user((int __user *)arg, &hw_ver_sym, sizeof(hw_ver_sym))){
+@@ -351,24 +362,24 @@
+ #if 1 /* GeorgeKuo: turn on function before check stp ready */
+      /* turn on BT */
+ 
+-    if (MTK_WCN_BOOL_FALSE == mtk_wcn_wmt_func_on(WMTDRV_TYPE_GPS)) {
++    if (MTK_WCN_BOOL_FALSE == mtk_wcn_wmt_func_on(WMTDRV_TYPE_GPS, CHIP_TYPE_SOC)) {
+         GPS_WARN_FUNC("WMT turn on GPS fail!\n");
+         return -ENODEV;
+     } else {
+-        mtk_wcn_wmt_msgcb_reg(WMTDRV_TYPE_GPS, gps_cdev_rst_cb);
++        mtk_wcn_wmt_msgcb_reg(WMTDRV_TYPE_GPS, gps_cdev_rst_cb, CHIP_TYPE_SOC);
+         GPS_INFO_FUNC("WMT turn on GPS OK!\n");
+     }
+ #endif
+ 
+-    if (mtk_wcn_stp_is_ready()) {
++    if (mtk_wcn_stp_is_ready(CHIP_TYPE_SOC)) {
+ #if 0
+-        if (MTK_WCN_BOOL_FALSE == mtk_wcn_wmt_func_on(WMTDRV_TYPE_GPS)) {
++        if (MTK_WCN_BOOL_FALSE == mtk_wcn_wmt_func_on(WMTDRV_TYPE_GPS, CHIP_TYPE_SOC)) {
+             GPS_WARN_FUNC("WMT turn on GPS fail!\n");
+             return -ENODEV;
+         }
+         GPS_INFO_FUNC("WMT turn on GPS OK!\n");
+ #endif
+-        mtk_wcn_stp_register_event_cb(GPS_TASK_INDX, GPS_event_cb);
++        mtk_wcn_stp_register_event_cb(GPS_TASK_INDX, GPS_event_cb, CHIP_TYPE_SOC);
+     }  else {        
+         GPS_ERR_FUNC("STP is not ready, Cannot open GPS Devices\n\r");
+         
+@@ -397,10 +408,10 @@
+ 		return -EPERM;
+ 	}
+     /*Flush Rx Queue*/
+-    mtk_wcn_stp_register_event_cb(GPS_TASK_INDX, 0x0);  // unregister event callback function
+-    mtk_wcn_wmt_msgcb_unreg(WMTDRV_TYPE_GPS);
++    mtk_wcn_stp_register_event_cb(GPS_TASK_INDX, 0x0, CHIP_TYPE_SOC);  // unregister event callback function
++    mtk_wcn_wmt_msgcb_unreg(WMTDRV_TYPE_GPS, CHIP_TYPE_SOC);
+     
+-    if (MTK_WCN_BOOL_FALSE == mtk_wcn_wmt_func_off(WMTDRV_TYPE_GPS)) {
++    if (MTK_WCN_BOOL_FALSE == mtk_wcn_wmt_func_off(WMTDRV_TYPE_GPS, CHIP_TYPE_SOC)) {
+         GPS_WARN_FUNC("WMT turn off GPS fail!\n");
+         return -EIO;    //mostly, native programer does not care this return vlaue, but we still return error code.
+     }

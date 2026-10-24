@@ -1,0 +1,4 @@
+# vold reads /fstab.${ro.hardware} (icx). Only the microSD slot is listed:
+# msdc1 is the card, the eMMC is msdc3 and must never be vold's.
+# android-boot.sh refuses to start if a line names anything else.
+/devices/platform/mtk-msdc.1/mmc_host*    auto    auto    defaults    voldmanaged=sdcard1:auto

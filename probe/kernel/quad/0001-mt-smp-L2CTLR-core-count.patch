@@ -1,0 +1,43 @@
+--- a/arch/arm/mach-mt8590/mt-smp.c
++++ b/arch/arm/mach-mt8590/mt-smp.c
+@@ -107,34 +107,13 @@
+ 
+ 
+ int L2CTLR_get_core_count(void){
+-
+-    //unsigned int cores = 0;
+-    //asm volatile(
+-    //"MRC p15, 1, %0, c9, c0, 2\n"
+-    //: "=r" (cores)
+-    //:
+-    //: "cc"
+-    //);
+-    //
+-    //cores = cores >> 24;
+-    //cores += 1;    
+-    //return cores;
+-    
++    /* Read the synthesized core count from L2CTLR (bits[25:24]+1), not the
++     * devinfo efuse word 3 which fuses this SKU to 2 although the silicon is
++     * quad A7 (L2CTLR=0x03800001). Only takes effect with CONFIG_NR_CPUS=4. */
+     unsigned int cores = 0;
+-    extern u32 get_devinfo_with_index(u32 index);
+-    u32 idx = 3;
+-    u32 value = 0;
+-    value = get_devinfo_with_index(idx);
+-
+-    value = (value >> 24) & 0xF;
+-    if (value == 0x0)
+-        cores = 4;
+-    else if (value == 0x8)
+-        cores = 3;
+-    else
+-        cores = 2;
+-    
+-    printk("[CORE] num:%d\n",cores);
++    asm volatile("MRC p15, 1, %0, c9, c0, 2\n" : "=r" (cores) : : "cc");
++    cores = ((cores >> 24) & 0x3) + 1;
++    printk("[CORE] num:%d (L2CTLR)\n", cores);
+     return cores;
+ }
+ #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0))

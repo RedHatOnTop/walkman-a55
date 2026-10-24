@@ -1,0 +1,27 @@
+--- a/window/PlayerWindow.qml
++++ b/window/PlayerWindow.qml
+@@ -30,6 +30,7 @@
+         id: header
+         anchors.top: parent.top
+         properties: playerWindow.headerArea
++        color: "transparent"
+     }
+ 
+     SourceDirectOrClearAudioComp {
+@@ -56,7 +57,7 @@
+       properties: playerWindow.pageIndicator
+     }
+ 
+-    BasicPlayerControls { // 120
++    WmPlayerControls { // 110
+         id: operation
+         anchors.bottom: footer.top
+         properties: playerWindow.basicPlayerControls
+@@ -69,6 +70,7 @@
+         id: footer
+         anchors.bottom: parent.bottom
+         properties: playerWindow.navigationBar
++        color: "transparent"
+     }
+ 
+   // スワイプ感知領域の拡大対応

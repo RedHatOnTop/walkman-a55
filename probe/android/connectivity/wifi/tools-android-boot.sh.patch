@@ -1,0 +1,56 @@
+--- a/tools/android-boot.sh	2026-10-15 19:40:20.146172343 +0900
++++ b/tools/android-boot.sh	2026-10-15 19:49:48.173445694 +0900
+@@ -10,6 +10,8 @@
+ #   tools/android-boot.sh log         show the container's kernel log lines
+ #   tools/android-boot.sh down        stop the container
+ #   tools/android-boot.sh pull        copy the container logs into work/android
++#   tools/android-boot.sh wifi        Wi-Fi modules / node / netdev state
++#   tools/android-boot.sh wifi-unload host side Wi-Fi teardown, after down
+ #
+ # The device needs a reboot afterwards to get the stock Mali driver and the
+ # Sony UI back.
+@@ -24,6 +26,7 @@
+ DATA_NAME=wmmod-android/android-data.img
+ SYS_NAME=wmmod-android/fire-system.img
+ OUT="$ROOT/work/android/boot-out"
++WIFI_BUNDLE="$ROOT/work/wifitest/bundle/WIFITEST"
+ 
+ CMD="${1:-}"
+ shift || true
+@@ -73,6 +76,18 @@
+     [ -f "$IMG" ] || { echo "missing $IMG" >&2; exit 1; }
+     [ -x "$ROOT/probe/out/pivotinit" ] || { echo "run ./probe/build.sh tools first" >&2; exit 1; }
+     "${A[@]}" push "$ROOT/probe/kmod/mali-r4p0/mali_r4p0.ko" /tmp/mali_r4p0.ko > /dev/null
++    # The four Wi-Fi modules of the proven WIFITEST bundle go to /tmp/wifi; the
++    # device script loads them host-side before the container starts. Checked
++    # against the bundle's own sums first, so a different build is never loaded.
++    if [ -f "$WIFI_BUNDLE/modules/mtk_wmt_wifi_soc.ko" ]; then
++        (cd "$WIFI_BUNDLE" && sha256sum --quiet -c SHA256SUMS) || { echo "WIFITEST sums do not match" >&2; exit 1; }
++        "${A[@]}" shell "/system/xbin/busybox mkdir -p /tmp/wifi"
++        for ko in mtk_wmt_wifi_soc compat_bp cfg80211_bp wlan_mt_bp; do
++            "${A[@]}" push "$WIFI_BUNDLE/modules/$ko.ko" /tmp/wifi/ > /dev/null
++        done
++    else
++        echo "no $WIFI_BUNDLE: the container starts without Wi-Fi" >&2
++    fi
+     push_helpers
+     # Only up refreshes the idc overlay: a running container has it bound over
+     # its /system/usr/idc, so the other commands must leave it alone.
+@@ -96,7 +111,7 @@
+     fi
+     "${A[@]}" shell "sh /tmp/android-boot.sh up"
+     ;;
+-status|log|down|prepare)
++status|log|down|prepare|wifi|wifi-unload)
+     push_helpers
+     "${A[@]}" shell "sh /tmp/android-boot.sh $CMD"
+     ;;
+@@ -114,7 +129,7 @@
+     ls -l "$OUT"
+     ;;
+ *)
+-    echo "usage: tools/android-boot.sh up | status | sh CMD | log | down | pull" >&2
++    echo "usage: tools/android-boot.sh up | status | sh CMD | log | wifi | wifi-unload | down | pull" >&2
+     exit 2
+     ;;
+ esac

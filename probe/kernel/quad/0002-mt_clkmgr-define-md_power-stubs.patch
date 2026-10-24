@@ -1,0 +1,25 @@
+--- a/arch/arm/mach-mt8590/mt_clkmgr.c
++++ b/arch/arm/mach-mt8590/mt_clkmgr.c
+@@ -2289,9 +2289,9 @@
+ #define JIFFIES_PER_LOOP 10
+ 
+ 
+-#if !CLKMGR_8127
+-
+-
++/* Defined unconditionally: on this CLKMGR_8127=1 SoC the stock "#if !CLKMGR_8127"
++ * guard dropped these, but mtk_ccci_helper.c's internal_md_power_down() still calls
++ * them in the no-modem (dummy CCCI) build, so the no-op stubs must exist to link. */
+ int md_power_on(int id)
+ {
+ 	return 0;
+@@ -2305,9 +2305,6 @@
+ EXPORT_SYMBOL(md_power_off);
+ 
+ 
+-#endif /* !CLKMGR_8127 */
+-
+-
+ int conn_power_on(void)
+ {
+ 	int err;

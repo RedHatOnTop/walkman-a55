@@ -1,0 +1,48 @@
+{
+  "screen": "qrc:/sid_0201_player/MusicPlayerDefault.qml",
+  "window": "qrc:/window/PlayerWindow.qml",
+  "backdrop": "qrc:/components/WmBackdrop.qml",
+  "screenInfo": {
+    "y": 66,
+    "height": 584
+  },
+  "available": true,
+  "cover": "neon.png",
+  "values": {
+    "meta_data": {
+      "play_title": "Midnight Drive Through the Neon District (Extended Mix)",
+      "artist_name": "Synthwave Collective",
+      "album_name": "After Dark Vol. 2",
+      "is_high_resolution": true,
+      "lyrics_status": 2
+    },
+    "entry_id": "1",
+    "update_db_counter": 0,
+    "total_playback_time": 412000,
+    "currently_playing_time": 300000,
+    "currentry_playtrack_num": 1,
+    "total_playtrack_num": 24,
+    "is_activated": true
+  },
+  "windowValues": {
+    "headerArea": {
+      "objectName": "headerArea",
+      "useVolumeArea": true,
+      "volume": 43
+    },
+    "navigationBar": {
+      "objectName": "navigationBar"
+    },
+    "basicPlayerControls": {
+      "objectName": "basicPlayerControls",
+      "dispMode": 1,
+      "playTitle": "Midnight Drive Through the Neon District (Extended Mix)",
+      "playState": true,
+      "playerButtonEnabled": true,
+      "shuffleState": false,
+      "shuffleVisible": true,
+      "repeatModeState": 1,
+      "repeatModeVisible": true
+    }
+  }
+}

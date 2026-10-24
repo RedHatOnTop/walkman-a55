@@ -1,0 +1,151 @@
+--- a/drivers/misc/mediatek/conn_soc/common/linux/pub/wmt_chrdev_wifi.c
++++ b/wmt_chrdev_wifi.c
+@@ -11,6 +11,21 @@
+ * You should have received a copy of the GNU General Public License along with this program.
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
++/*
++ * NW-A55 port notes (not part of the MediaTek original):
++ *
++ * Taken from Sony's GPL tree linux-kernel-3.10.26,
++ * drivers/misc/mediatek/conn_soc/common/linux/pub/wmt_chrdev_wifi.c, the source
++ * of the WIFITEST bundle's mtk_wmt_wifi_soc.ko (an unpatched rebuild matches it
++ * in every section). Station only: the stock 'S' write also registers the P2P
++ * interface, and CM's netd writes "STA" on every Wi-Fi enable
++ * (wifi_change_fw_path). With that interface registered, the next nl80211
++ * request from wpa_supplicant oopsed in __cfg80211_rdev_from_attrs on a garbage
++ * wiphy pointer (devlog/2026-10-15-wifi-container-groundwork.md). So 'S' only
++ * powers the function, 'P' and 'A' are refused, wlan_mode stays HALT, and no
++ * path asks wlan_mt to turn off a P2P/AP interface that was never registered.
++ * See PORT.diff for the exact delta.
++ */
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/types.h>
+@@ -180,7 +195,7 @@
+ 
+     down(&wr_mtx);
+ 
+-    if (powered == 1) {
++    if (powered == 1 && wlan_mode != WLAN_MODE_HALT) {
+ 		netdev = g_netdev;
+ 		
+         if (netdev == NULL) {
+@@ -311,7 +326,6 @@
+     char local[12] = {0};
+     struct net_device *netdev = NULL;
+     PARAM_CUSTOM_P2P_SET_STRUC_T p2pmode;
+-    int wait_cnt = 0;
+ 
+     down(&wr_mtx);
+     if (count <= 0) {
+@@ -333,7 +347,10 @@
+             }
+ 
+             netdev = g_netdev;
+-            if (netdev == NULL) {
++            if (wlan_mode == WLAN_MODE_HALT) {
++                /* no P2P/AP interface to turn off */
++            }
++            else if (netdev == NULL) {
+                 WIFI_ERR_FUNC("Fail to get wlan0 net device\n");
+             }
+             else {
+@@ -348,8 +365,8 @@
+                         wlan_mode = WLAN_MODE_HALT;
+                     }
+                }
+-               netdev = NULL;
+             }
++            netdev = NULL;
+ 
+             if (MTK_WCN_BOOL_FALSE == mtk_wcn_wmt_func_off(WMTDRV_TYPE_WIFI, CHIP_TYPE_SOC)) {
+                 WIFI_ERR_FUNC("WMT turn off WIFI fail!\n");
+@@ -464,74 +481,27 @@
+                 break;
+             }
+         }
+-        else if (local[0] == 'S' || local[0] == 'P' || local[0] == 'A') {
++        else if (local[0] == 'S') {
+             if (powered == 0) {
+-                /* If WIFI is off, turn on WIFI first */
+                 if (MTK_WCN_BOOL_FALSE == mtk_wcn_wmt_func_on(WMTDRV_TYPE_WIFI, CHIP_TYPE_SOC)) {
+                     WIFI_ERR_FUNC("WMT turn on WIFI fail!\n");
+                     goto done;
+                 }
+-                else {
+-                    powered = 1;
+-                    WIFI_MAJOR_FUNC("WMT turn on WIFI success!\n");
+-                    wlan_mode = WLAN_MODE_HALT;
+-                }
+-            }
+-
+-            if (pf_set_p2p_mode == NULL) {
+-                WIFI_ERR_FUNC("Set p2p mode handler is NULL\n");
+-                goto done;
+-            }
+-
+-            netdev = g_netdev;
+-            while (netdev == NULL && wait_cnt < 10) {
+-                WIFI_ERR_FUNC("Fail to get wlan0 net device, sleep 300ms\n");
+-                msleep(300);
+-                wait_cnt ++;
+-                netdev = g_netdev;
+-            }
+-            if (wait_cnt >= 10) {
+-                WIFI_ERR_FUNC("Get wlan0 net device timeout\n");
+-                goto done;
+-            }
+-
+-            if ((wlan_mode == WLAN_MODE_AP && (local[0] == 'S' || local[0] == 'P')) ||
+-                (wlan_mode == WLAN_MODE_STA_P2P && (local[0] == 'A'))){
+-                    p2pmode.u4Enable = 0;
+-                    p2pmode.u4Mode = 0;
+-                    if (pf_set_p2p_mode(netdev, p2pmode) != 0){
+-                        WIFI_ERR_FUNC("Turn off p2p/ap mode fail");
+-                        goto done;
+-                    }
+-            }
+-
+-            if (local[0] == 'S' || local[0] == 'P'){
+-                p2pmode.u4Enable = 1;
+-                p2pmode.u4Mode = 0;
+-                if (pf_set_p2p_mode(netdev, p2pmode) != 0){
+-                    WIFI_ERR_FUNC("Set wlan mode fail\n");
+-                }
+-                else{
+-                    WIFI_MAJOR_FUNC("Set wlan mode %d --> %d\n", wlan_mode, WLAN_MODE_STA_P2P);
+-                    wlan_mode = WLAN_MODE_STA_P2P;
+-                    retval = count;
+-                }
+-            } else if (local[0] == 'A'){
+-                p2pmode.u4Enable = 1;
+-                p2pmode.u4Mode = 1;
+-                if (pf_set_p2p_mode(netdev, p2pmode) != 0){
+-                    WIFI_ERR_FUNC("Set wlan mode fail\n");
+-                }
+-                else{
+-                    WIFI_MAJOR_FUNC("Set wlan mode %d --> %d\n", wlan_mode, WLAN_MODE_AP);
+-                    wlan_mode = WLAN_MODE_AP;
+-                    retval = count;
+-                }
++                powered = 1;
++                WIFI_MAJOR_FUNC("WMT turn on WIFI success!\n");
+             }
+-            netdev = NULL;
++            WIFI_MAJOR_FUNC("Set wlan mode: station only, P2P not registered\n");
++            retval = count;
++        }
++        else if (local[0] == 'P' || local[0] == 'A') {
++            WIFI_ERR_FUNC("P2P/AP mode '%c' is not supported on this device\n", local[0]);
++            retval = -EOPNOTSUPP;
+         } else if (local[0] == 'X') {
+             netdev = g_netdev;
+-            if (netdev == NULL) {
++            if (wlan_mode == WLAN_MODE_HALT) {
++                retval = count;
++            }
++            else if (netdev == NULL) {
+                 WIFI_ERR_FUNC("Fail to get wlan0 net device\n");
+             } else {
+                 p2pmode.u4Enable = 0;

@@ -1,0 +1,54 @@
+--- a/components/StatusVolumeBar.qml
++++ b/components/StatusVolumeBar.qml
+@@ -21,6 +21,9 @@
+     property int avlsVolumeMax: 0   // Avls制限中ボリューム最大値
+     property bool visibleVolumubar
+     property bool isHighGain :false
++    // wmmod: on the tinted backdrop the black tick mask cannot be used, so
++    // the meter is drawn as a rounded track instead
++    property bool wmTint: viewstyle.wm ? viewstyle.wm.tint : false
+ 
+     property var volumeOperateInfo
+     /** type:string マウスエリアのenabledプロパティ */
+@@ -55,7 +58,7 @@
+         height:28
+         anchors.top:parent.top
+         anchors.left:parent.left
+-        color:viewstyle.bgcolor.D1
++        color: statusVolumeBar.wmTint ? "transparent" : viewstyle.bgcolor.D1
+ 
+         Item{
+             id:area
+@@ -80,8 +83,10 @@
+                     id: barBase
+                     anchors.left: barFillter.left
+                     anchors.leftMargin: barSideOffSet
+-                    color: baseColor
+-                    height: barHeight
++                    color: statusVolumeBar.wmTint ? viewstyle.wm.surfaceContainerHigh : baseColor
++                    height: statusVolumeBar.wmTint ? 6 : barHeight
++                    y: (barHeight - height) / 2
++                    radius: statusVolumeBar.wmTint ? 3 : 0
+                     width: isAvlsOn === false ? (volumeBar.width - barSideOffSet*2) : (oneValue * avlsVolumeMax)
+                 }
+ 
+@@ -90,8 +95,10 @@
+                     id: barVolume
+                     anchors.left: barFillter.left
+                     anchors.leftMargin: barSideOffSet
+-                    color: barColor
++                    color: statusVolumeBar.wmTint ? viewstyle.wm.primary : barColor
+                     height: barBase.height
++                    y: barBase.y
++                    radius: barBase.radius
+                     width: volume * oneValue
+                 }
+ 
+@@ -99,6 +106,7 @@
+                 Image {
+                     id: barFillter
+                     anchors.left: parent.left
++                    opacity: statusVolumeBar.wmTint ? 0 : 1
+                     source: "qrc:/assets/images/stat_volumebar_volume_meter_template.png"
+                 }
+ 

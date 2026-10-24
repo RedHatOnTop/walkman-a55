@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">브라우저</string>
+    <string name="address_hint">검색어 또는 주소</string>
+    <string name="reload">새로고침</string>
+    <string name="stop">중지</string>
+    <string name="downloading">%1$s 내려받는 중</string>
+    <string name="no_file_picker">파일을 고를 수 있는 앱이 없습니다</string>
+</resources>

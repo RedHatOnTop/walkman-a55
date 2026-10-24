@@ -1,0 +1,4 @@
+# qemu-arm for running the ARM harness on the device's Qt libraries
+# (run-arm.sh), without registering anything with the host's binfmt_misc.
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends qemu-user-static python3

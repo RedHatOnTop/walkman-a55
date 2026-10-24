@@ -1,0 +1,69 @@
+--- a/sid_4102_4103_setting_top/SettingTop.qml
++++ b/sid_4102_4103_setting_top/SettingTop.qml
+@@ -339,6 +339,9 @@
+ 
+         QuickBar {
+             id: quickBar
++            // With none of its buttons (Android owns brightness) the bar takes no room.
++            visible: brightnessIconVisible || isNcAvailable || isAsmAvailable || blueToothIconVisible || remoteControlIconVisible
++            height: visible ? 127 : 0
+             onEdgeReleased: rootSetting.onReleased()
+             onEdgeCanceled: rootSetting.onReleased()
+             onPressedYPosition: rootSetting.pressedYPosition(posY)
+--- a/sid_4111_device_setting/DeviceSetting.qml
++++ b/sid_4111_device_setting/DeviceSetting.qml
+@@ -274,6 +274,7 @@
+ 
+             // 画面オフタイマー
+             SettingItemNormal {
++              visible: false
+               title: qsTr("010026") + viewstyle.empty_string
+               description: screenOffTimer
+               onClicked: goToScreenOffTimerSetting()
+@@ -309,7 +310,7 @@
+ 
+             // USB接続設定
+             SettingItemNormal {
+-                visible: isNotSettingForDac && is_not_setting_for_bt_receiver
++                visible: false
+                 title: qsTr("200015") + viewstyle.empty_string
+                 onClicked: goToUsbSetting()
+                 onEdgeReleased: rootHomeSet.onReleased()
+@@ -371,7 +372,7 @@
+ 
+             // 時計設定
+             SettingItemNormal {
+-                visible: isNotSettingForDac && is_not_setting_for_bt_receiver
++                visible: false
+                 title: qsTr("010005") + viewstyle.empty_string
+                 onClicked: goToDateSettingTop()
+                 onEdgeReleased: rootHomeSet.onReleased()
+--- a/sid_4115_output_setting/OutputSetting.qml
++++ b/sid_4115_output_setting/OutputSetting.qml
+@@ -345,7 +345,7 @@
+ 
+             // DSD再生設定
+             SettingItemCategory {
+-                visible: !is_function_bt_receiver
++                visible: false
+                 title: qsTr("020218") + viewstyle.empty_string
+                 onEdgeReleased: base.onReleased()
+                 onEdgeCanceled: base.onReleased()
+--- a/sid_4101_initialize_top/InitializeTop.qml
++++ b/sid_4101_initialize_top/InitializeTop.qml
+@@ -56,6 +56,7 @@
+ 
+       // 本体メモリー初期化
+       SettingItemNormal {
++        visible: false
+         title: qsTr("010051") + viewstyle.empty_string
+         onClicked: startFormatInternalMemory()
+       }
+@@ -84,6 +85,7 @@
+ 
+       // 工場出荷時状態に戻す
+       SettingItemNormal {
++        visible: false
+         title: qsTr("010054") + viewstyle.empty_string
+         onClicked: startFactoryReset()
+       }
